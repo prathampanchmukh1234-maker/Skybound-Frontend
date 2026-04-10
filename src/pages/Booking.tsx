@@ -151,6 +151,13 @@ const Booking: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
     setLoading(true);
     
     const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
+    const BASE_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+
+    if (!BASE_API_URL) {
+      setLoading(false);
+      onShowToast('Backend API URL is missing. Set VITE_API_URL first.', 'error');
+      return;
+    }
 
     const bookingData = {
       userId: user?.id || 'guest',
@@ -171,6 +178,11 @@ const Booking: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
 
     // Demo Mode or isFreeDemo: If no key is present or user is demo, skip payment
     if (!razorpayKey || isFreeDemo) {
+      if (!razorpayKey && !isFreeDemo) {
+        setLoading(false);
+        onShowToast('Razorpay key is missing in frontend env.', 'error');
+        return;
+      }
       setTimeout(async () => {
         await createBookingRecord({
           ...bookingData,
@@ -194,7 +206,6 @@ const Booking: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
     // Fetch order_id from backend
     let orderId = '';
     try {
-      const BASE_API_URL = import.meta.env.VITE_API_URL || '';
       const { data: { session } } = await supabase.auth.getSession();
       const orderRes = await fetch(`${BASE_API_URL}/api/payment/create-order`, {
         method: 'POST',
@@ -204,13 +215,15 @@ const Booking: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
         },
         body: JSON.stringify({ amount: finalPrice }),
       });
-      if (!orderRes.ok) throw new Error('Order creation failed');
-      const orderData = await orderRes.json();
+      const orderData = await orderRes.json().catch(() => ({}));
+      if (!orderRes.ok) {
+        throw new Error(orderData.error || orderData.message || 'Order creation failed');
+      }
       orderId = orderData.orderId;
     } catch (err) {
       console.error('Failed to create Razorpay order:', err);
       setLoading(false);
-      onShowToast('Payment initialization failed. Please try again.', 'error');
+      onShowToast(err instanceof Error ? err.message : 'Payment initialization failed. Please try again.', 'error');
       return;
     }
 
@@ -225,7 +238,6 @@ const Booking: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
       handler: async function (response: any) {
         // Verify on backend
         try {
-          const BASE_API_URL = import.meta.env.VITE_API_URL || '';
           const { data: { session } } = await supabase.auth.getSession();
           await fetch(`${BASE_API_URL}/api/payment/verify`, {
             method: 'POST',
