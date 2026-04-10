@@ -120,10 +120,10 @@ const SearchForm: React.FC = () => {
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className="bg-white dark:bg-slate-900 rounded-3xl p-10 md:p-14 relative z-30 max-w-6xl mx-auto border border-slate-100 dark:border-slate-800 shadow-2xl transition-all duration-500"
+      className="bg-white dark:bg-slate-900 rounded-[2rem] sm:rounded-3xl p-5 sm:p-8 md:p-14 relative z-30 max-w-6xl mx-auto border border-slate-100 dark:border-slate-800 shadow-2xl transition-all duration-500"
     >
-      <div className="flex flex-wrap items-center justify-between gap-8 mb-12 border-b dark:border-slate-800 pb-10">
-        <div className="flex flex-wrap items-center gap-3 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-2xl">
+      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6 mb-8 sm:mb-12 border-b dark:border-slate-800 pb-8 sm:pb-10">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-2xl">
           {['flight', 'hotel', 'bus', 'train', 'holiday', 'cab', 'activity'].map(t => (
             <motion.button 
               key={t}
@@ -131,14 +131,14 @@ const SearchForm: React.FC = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setType(t as any)}
-              className={`px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 ${type === t ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+              className={`px-4 sm:px-6 py-3 rounded-xl font-black text-[9px] sm:text-[10px] uppercase tracking-[0.18em] transition-all flex items-center gap-2 ${type === t ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
             >
               <i className={`fa-solid ${t === 'flight' ? 'fa-plane' : t === 'hotel' ? 'fa-hotel' : t === 'bus' ? 'fa-bus' : t === 'train' ? 'fa-train' : t === 'holiday' ? 'fa-umbrella-beach' : t === 'cab' ? 'fa-car' : 'fa-ticket'}`}></i> {t}
             </motion.button>
           ))}
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 w-full xl:w-auto">
            <div className="flex flex-col gap-1">
              <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Max Budget</span>
              <span className="text-sm font-black text-indigo-600 font-display">{convertPrice(maxBudget)}</span>
@@ -147,14 +147,14 @@ const SearchForm: React.FC = () => {
               type="range" min="1000" max="200000" step="5000"
               value={maxBudget}
               onChange={(e) => setMaxBudget(Number(e.target.value))}
-              className="w-32 accent-indigo-600 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full appearance-none cursor-pointer"
+              className="w-full sm:w-40 accent-indigo-600 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full appearance-none cursor-pointer"
            />
         </div>
       </div>
 
       {type === 'flight' && (
-        <div className="flex gap-8 mb-10 px-4">
-          <div className="flex gap-6">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-8 mb-8 sm:mb-10 px-1 sm:px-4">
+          <div className="flex flex-wrap gap-4 sm:gap-6">
             <button 
               type="button"
               onClick={() => setIsMultiCity(false)}
@@ -170,7 +170,7 @@ const SearchForm: React.FC = () => {
               Multi-City
             </button>
           </div>
-          <div className="flex items-center gap-3 ml-auto">
+          <div className="flex items-center gap-3 lg:ml-auto">
             <input 
               type="checkbox" id="flexi" 
               checked={flexibleDates} 
@@ -182,7 +182,7 @@ const SearchForm: React.FC = () => {
         </div>
       )}
 
-      <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-12 gap-8 relative">
+      <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-8 relative">
         {(type !== 'hotel' && type !== 'activity') && (
           <div className="md:col-span-4 relative">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4 mb-3 block">Origin</label>
@@ -198,7 +198,7 @@ const SearchForm: React.FC = () => {
               <div className="absolute top-[calc(100%+12px)] left-0 right-0 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.15)] z-[220] overflow-y-auto max-h-[400px] animate-in fade-in slide-in-from-top-4 duration-300 scrollbar-hide">
                 <div className="p-4 text-[9px] font-black text-slate-400 uppercase tracking-widest border-b dark:border-slate-800 sticky top-0 bg-white dark:bg-slate-900 z-10">Recommended Locations</div>
                 {suggestions.from.map((loc: any) => (
-                  <div key={loc.id} onClick={() => selectSuggestion('from', loc.name)} className="px-8 py-5 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex justify-between items-center group transition-colors">
+                <div key={loc.id} onClick={() => selectSuggestion('from', loc.name)} className="px-5 sm:px-8 py-4 sm:py-5 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex justify-between items-center gap-4 group transition-colors">
                     <div>
                       <span className="font-black text-base text-slate-900 dark:text-white block group-hover:text-indigo-600 transition-colors">{loc.name}</span>
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{loc.country}</span>
@@ -227,7 +227,7 @@ const SearchForm: React.FC = () => {
             <div className="absolute top-[calc(100%+12px)] left-0 right-0 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.15)] z-[220] overflow-y-auto max-h-[400px] animate-in fade-in slide-in-from-top-4 duration-300 scrollbar-hide">
               <div className="p-4 text-[9px] font-black text-slate-400 uppercase tracking-widest border-b dark:border-slate-800 sticky top-0 bg-white dark:bg-slate-900 z-10">Recommended Locations</div>
               {suggestions.to.map((loc: any) => (
-                <div key={loc.id} onClick={() => selectSuggestion('to', loc.name)} className="px-8 py-5 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex justify-between items-center group transition-colors">
+                <div key={loc.id} onClick={() => selectSuggestion('to', loc.name)} className="px-5 sm:px-8 py-4 sm:py-5 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex justify-between items-center gap-4 group transition-colors">
                   <div>
                     <span className="font-black text-base text-slate-900 dark:text-white block group-hover:text-indigo-600 transition-colors">{loc.name}</span>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{loc.country}</span>
@@ -282,7 +282,7 @@ const SearchForm: React.FC = () => {
         />
       )}
 
-      <div className="mt-12 flex flex-wrap gap-6 items-center border-t dark:border-slate-800 pt-10">
+      <div className="mt-8 sm:mt-12 flex flex-wrap gap-4 sm:gap-6 items-center border-t dark:border-slate-800 pt-8 sm:pt-10">
         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Popular Routes:</span>
         <div className="flex flex-wrap gap-3">
           {['Pune → Mumbai', 'Mumbai → Goa', 'Pune → Shirdi', 'Delhi → Leh'].map((route, i) => (

@@ -29,11 +29,11 @@ const TrendingDestinations = () => {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.6 }}
-      className="max-w-7xl mx-auto px-6 mt-40"
+      className="max-w-7xl mx-auto px-4 sm:px-6 mt-24 sm:mt-32 md:mt-40"
     >
-      <div className="flex items-center justify-between mb-12">
-        <h2 className="text-5xl font-black text-slate-900 dark:text-white tracking-tighter">Trending Destinations</h2>
-        <div className="flex gap-2">
+      <div className="flex items-center justify-between mb-8 sm:mb-12 gap-4">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter">Trending Destinations</h2>
+        <div className="hidden sm:flex gap-2">
           <button onClick={() => scroll('left')} className="w-12 h-12 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 hover:text-indigo-600 transition-colors"><ChevronLeft className="w-5 h-5" /></button>
           <button onClick={() => scroll('right')} className="w-12 h-12 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 hover:text-indigo-600 transition-colors"><ChevronRight className="w-5 h-5" /></button>
         </div>
@@ -94,11 +94,11 @@ const WeekendGetaways = () => {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.6 }}
-      className="max-w-7xl mx-auto px-6 mt-40"
+      className="max-w-7xl mx-auto px-4 sm:px-6 mt-24 sm:mt-32 md:mt-40"
     >
-      <div className="flex items-center justify-between mb-12">
-        <h2 className="text-5xl font-black text-slate-900 dark:text-white tracking-tighter">Weekend Getaways from Pune</h2>
-        <div className="flex gap-2">
+      <div className="flex items-center justify-between mb-8 sm:mb-12 gap-4">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter">Weekend Getaways from Pune</h2>
+        <div className="hidden sm:flex gap-2">
           <button onClick={() => scroll('left')} className="w-12 h-12 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 hover:text-indigo-600 transition-colors"><ChevronLeft className="w-5 h-5" /></button>
           <button onClick={() => scroll('right')} className="w-12 h-12 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 hover:text-indigo-600 transition-colors"><ChevronRight className="w-5 h-5" /></button>
         </div>
@@ -160,7 +160,7 @@ const Home: React.FC = () => {
   return (
     <div className="pb-32 bg-white dark:bg-slate-950 transition-colors duration-500">
       {/* Hero Section */}
-      <div className="relative min-h-[95vh] flex flex-col items-center justify-center text-center px-6 overflow-hidden">
+      <div className="relative min-h-[88vh] sm:min-h-[95vh] flex flex-col items-center justify-center text-center px-4 sm:px-6 overflow-hidden">
         <div className="mesh-gradient">
           <div className="blob top-0 left-0"></div>
           <div className="blob bottom-0 right-0" style={{ animationDelay: '-5s', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%)' }}></div>
@@ -171,26 +171,26 @@ const Home: React.FC = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: [0.23, 1, 0.32, 1] }}
-          className="relative z-10 max-w-5xl"
+          className="relative z-10 max-w-5xl w-full"
         >
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-slate-50/50 dark:bg-indigo-900/10 border border-slate-200/50 dark:border-indigo-800/30 text-slate-900 dark:text-white mb-10 backdrop-blur-sm"
+            className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 rounded-full bg-slate-50/50 dark:bg-indigo-900/10 border border-slate-200/50 dark:border-indigo-800/30 text-slate-900 dark:text-white mb-8 sm:mb-10 backdrop-blur-sm"
           >
             <Sparkles className="w-3.5 h-3.5 animate-pulse fill-current" />
             <span className="text-[10px] font-black uppercase tracking-[0.2em]">The Future of Travel & Living</span>
           </motion.div>
           
-          <h1 className="text-6xl md:text-[9rem] font-black mb-8 tracking-[-0.06em] leading-[0.92] text-slate-900 dark:text-white break-words max-w-6xl mx-auto px-4">
+          <h1 className="text-4xl sm:text-6xl md:text-[9rem] font-black mb-6 sm:mb-8 tracking-[-0.06em] leading-[0.92] text-slate-900 dark:text-white break-words max-w-6xl mx-auto px-2 sm:px-4">
             <span className="block text-slate-950 dark:text-white">The World</span>
             <span className="block text-slate-900 drop-shadow-[0_10px_24px_rgba(15,23,42,0.12)] dark:text-transparent dark:bg-clip-text dark:bg-gradient-to-r dark:from-indigo-300 dark:via-violet-300 dark:to-fuchsia-300 dark:drop-shadow-[0_12px_40px_rgba(79,70,229,0.22)]">
               Awaits You
             </span>
           </h1>
           
-          <p className="text-slate-500 dark:text-slate-400 max-w-3xl mx-auto text-lg md:text-xl font-medium mb-14 leading-relaxed">
+          <p className="text-slate-500 dark:text-slate-400 max-w-3xl mx-auto text-base sm:text-lg md:text-xl font-medium mb-10 sm:mb-14 leading-relaxed">
             Experience the most sophisticated ecosystem for travel, entertainment, and lifestyle. Curated for those who demand excellence.
           </p>
           
@@ -216,7 +216,7 @@ const Home: React.FC = () => {
             </motion.button>
           </div>
 
-          <div className="mt-24 pt-12 border-t border-slate-100 dark:border-slate-800/50 flex flex-wrap justify-center items-center gap-12 opacity-50 grayscale hover:grayscale-0 transition-all duration-700">
+          <div className="mt-14 sm:mt-24 pt-8 sm:pt-12 border-t border-slate-100 dark:border-slate-800/50 flex flex-wrap justify-center items-center gap-5 sm:gap-12 opacity-50 grayscale hover:grayscale-0 transition-all duration-700">
             <div className="flex items-center gap-2 font-black text-[10px] uppercase tracking-widest text-slate-900 dark:text-white"><ShieldCheck className="w-4 h-4 text-indigo-600" /> Secure Systems</div>
             <div className="flex items-center gap-2 font-black text-[10px] uppercase tracking-widest text-slate-900 dark:text-white"><Globe className="w-4 h-4 text-purple-600" /> Global Network</div>
             <div className="flex items-center gap-2 font-black text-[10px] uppercase tracking-widest text-slate-900 dark:text-white"><Sparkles className="w-4 h-4 text-pink-600 fill-current" /> AI Powered</div>
@@ -224,15 +224,15 @@ const Home: React.FC = () => {
         </motion.div>
       </div>
 
-      <div id="search-anchor" className="scroll-mt-32 px-6 -mt-24 relative z-20 overflow-visible">
+      <div id="search-anchor" className="scroll-mt-32 px-4 sm:px-6 -mt-14 sm:-mt-24 relative z-20 overflow-visible">
         <SearchForm />
 
         {/* Quick Access Services */}
-        <div className="max-w-7xl mx-auto mt-24">
-          <div className="flex items-center gap-4 mb-10 px-4">
+        <div className="max-w-7xl mx-auto mt-16 sm:mt-24">
+          <div className="flex items-center gap-4 mb-8 sm:mb-10 px-0 sm:px-4">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Quick Access</span>
             <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800/50"></div>
-            <div className="flex gap-2">
+            <div className="hidden sm:flex gap-2">
               <button 
                 onClick={() => {
                   const el = document.getElementById('quick-access-scroll');
@@ -316,19 +316,19 @@ const Home: React.FC = () => {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.8 }}
-        className="max-w-7xl mx-auto px-6 mt-40"
+        className="max-w-7xl mx-auto px-4 sm:px-6 mt-24 sm:mt-32 md:mt-40"
       >
-        <div className="flex items-center justify-between mb-12">
+        <div className="flex items-center justify-between mb-8 sm:mb-12 gap-4">
           <div>
             <span className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.4em] mb-2 block">Entertainment</span>
-            <h2 className="text-5xl font-black text-slate-900 dark:text-white tracking-tighter">Now Showing</h2>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter">Now Showing</h2>
           </div>
-          <Link to="/movies" className="group flex items-center gap-3 px-6 py-3 bg-slate-100 dark:bg-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all">
+          <Link to="/movies" className="hidden sm:flex group items-center gap-3 px-6 py-3 bg-slate-100 dark:bg-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all">
             View All
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-8">
           {MOVIES
             .slice(0, 6)
             .map((movie) => (
@@ -343,14 +343,14 @@ const Home: React.FC = () => {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.8 }}
-        className="max-w-7xl mx-auto px-6 mt-40"
+        className="max-w-7xl mx-auto px-4 sm:px-6 mt-24 sm:mt-32 md:mt-40"
       >
-        <div className="flex items-center justify-between mb-12">
+        <div className="flex items-center justify-between mb-8 sm:mb-12 gap-4">
           <div>
             <span className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.4em] mb-2 block">Live Events</span>
-            <h2 className="text-5xl font-black text-slate-900 dark:text-white tracking-tighter">Upcoming Concerts</h2>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter">Upcoming Concerts</h2>
           </div>
-          <Link to="/concerts" className="group flex items-center gap-3 px-6 py-3 bg-slate-100 dark:bg-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all">
+          <Link to="/concerts" className="hidden sm:flex group items-center gap-3 px-6 py-3 bg-slate-100 dark:bg-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all">
             View All
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </Link>
@@ -412,9 +412,9 @@ const Home: React.FC = () => {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
-        className="max-w-7xl mx-auto px-6 mt-40"
+        className="max-w-7xl mx-auto px-4 sm:px-6 mt-24 sm:mt-32 md:mt-40"
       >
-        <h2 className="text-5xl font-black text-slate-900 dark:text-white tracking-tighter mb-16">Recommended for you</h2>
+        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter mb-10 sm:mb-16">Recommended for you</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           {CATEGORIZED_DESTINATIONS.trending.map((d, i) => (
             <motion.div 
@@ -450,11 +450,11 @@ const Home: React.FC = () => {
       <WeekendTripFinder />
 
       {/* Upcoming Long Weekends */}
-      <div className="max-w-7xl mx-auto px-6 mt-40">
-        <div className="bg-slate-900 dark:bg-indigo-950 rounded-[4rem] p-12 md:p-20 relative overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-24 sm:mt-32 md:mt-40">
+        <div className="bg-slate-900 dark:bg-indigo-950 rounded-[2.5rem] md:rounded-[4rem] p-8 sm:p-12 md:p-20 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/20 blur-[120px] rounded-full -mr-48 -mt-48"></div>
           <div className="relative z-10">
-            <h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter mb-12">Upcoming Long Weekends 2026</h2>
+            <h2 className="text-3xl sm:text-4xl md:text-6xl font-black text-white tracking-tighter mb-8 sm:mb-12">Upcoming Long Weekends 2026</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {LONG_WEEKENDS_2026.map((w, i) => (
                 <div key={i} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 hover:bg-white/10 transition-all group">
@@ -483,12 +483,12 @@ const Home: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 mt-40 bg-slate-50 dark:bg-slate-900/50 py-32 rounded-[4rem] border border-slate-100 dark:border-slate-800">
-        <div className="text-center mb-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-24 sm:mt-32 md:mt-40 bg-slate-50 dark:bg-slate-900/50 py-16 sm:py-24 md:py-32 rounded-[2.5rem] md:rounded-[4rem] border border-slate-100 dark:border-slate-800">
+        <div className="text-center mb-12 sm:mb-20">
           <span className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.4em] mb-4 block">The SykBound Advantage</span>
-          <h2 className="text-6xl font-black text-slate-900 dark:text-white tracking-tighter">Why Choose Us?</h2>
+          <h2 className="text-3xl sm:text-5xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tighter">Why Choose Us?</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-16">
           <div className="text-center space-y-6">
             <div className="w-24 h-24 bg-indigo-100 dark:bg-indigo-900/30 rounded-[2rem] flex items-center justify-center mx-auto shadow-xl">
               <ShieldCheck className="w-10 h-10 text-indigo-600" />

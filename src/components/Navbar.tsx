@@ -33,6 +33,7 @@ const Navbar: React.FC = () => {
   const location = useLocation();
   const { theme, toggleTheme, currency, setCurrency, location: userLocation, user, loadingAuth, isSyncing, logout } = useGlobal();
   const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // Task 2: Wishlist state
   const [isWishlisted, setIsWishlisted] = useState(() => {
@@ -67,6 +68,10 @@ const Navbar: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
     localStorage.setItem('sb_wishlist_active', String(isWishlisted));
   }, [isWishlisted]);
 
@@ -86,6 +91,7 @@ const Navbar: React.FC = () => {
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
+  const navItems = ['Flights', 'Hotels', 'Movies', 'Concerts', 'Offers', 'AI Planner'];
 
   return (
     <motion.nav 
@@ -98,27 +104,27 @@ const Navbar: React.FC = () => {
           : 'py-8 bg-transparent border-b border-transparent'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-4 group">
+          <Link to="/" className="flex items-center gap-3 sm:gap-4 group min-w-0">
             <motion.div 
               whileHover={{ rotate: 12, scale: 1.1 }}
-              className="w-12 h-12 rounded-2xl overflow-hidden shadow-2xl shadow-indigo-500/20 ring-1 ring-white/20"
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl overflow-hidden shadow-2xl shadow-indigo-500/20 ring-1 ring-white/20 shrink-0"
             >
               <img src={logoUrl} alt="SkyBound logo" className="w-full h-full object-cover" />
             </motion.div>
-            <div className="flex flex-col">
-              <span className="text-3xl font-black tracking-tighter text-slate-900 dark:text-white leading-none">
+            <div className="flex flex-col min-w-0">
+              <span className="text-xl sm:text-3xl font-black tracking-tighter text-slate-900 dark:text-white leading-none truncate">
                 Sky<span className="text-indigo-600">Bound</span>
               </span>
-              <span className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-400 dark:text-slate-500 mt-1">Premium Ecosystem</span>
+              <span className="hidden sm:block text-[9px] font-black uppercase tracking-[0.4em] text-slate-400 dark:text-slate-500 mt-1">Premium Ecosystem</span>
             </div>
           </Link>
 
           {/* Desktop Navigation Links */}
           <div className="hidden lg:flex items-center gap-10">
-            {['Flights', 'Hotels', 'Movies', 'Concerts', 'Offers', 'AI Planner'].map((item) => {
+            {navItems.map((item) => {
               const searchType = new URLSearchParams(location.search).get('type');
               const path = item === 'Flights' ? '/flights' : 
                            item === 'Hotels' ? '/search?type=hotel' : 
@@ -153,21 +159,21 @@ const Navbar: React.FC = () => {
           </div>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2 sm:gap-4 lg:gap-6">
             {/* Theme Toggle */}
             <motion.button 
               whileHover={{ scale: 1.1, rotate: 15 }}
               whileTap={{ scale: 0.9 }}
               onClick={toggleTheme} 
-              className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-900/50 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-slate-100 dark:bg-slate-900/50 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
             >
-              {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+              {theme === 'light' ? <Moon className="w-4 h-4 sm:w-5 sm:h-5" /> : <Sun className="w-4 h-4 sm:w-5 sm:h-5" />}
             </motion.button>
 
             {loadingAuth || isSyncing ? (
               <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse"></div>
             ) : user ? (
-              <div className="flex items-center gap-4 relative group">
+              <div className="hidden sm:flex items-center gap-4 relative group">
                 <div className="flex items-center gap-2 cursor-pointer">
                   <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100 dark:border-indigo-800/50">
                     <User className="w-5 h-5" />
@@ -212,14 +218,82 @@ const Navbar: React.FC = () => {
               >
                 <Link 
                   to="/login"
-                  className="azure-btn px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all"
+                  className="hidden sm:inline-flex azure-btn px-6 lg:px-10 py-3 lg:py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all"
                 >
                   Sign In
                 </Link>
               </motion.div>
             )}
+
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
+              className="lg:hidden w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-900/50 flex items-center justify-center text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-800"
+              aria-label="Toggle navigation menu"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
+
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              className="lg:hidden mt-4 rounded-3xl border border-slate-200/70 dark:border-slate-800 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl shadow-2xl overflow-hidden"
+            >
+              <div className="p-3">
+                {navItems.map((item) => {
+                  const searchType = new URLSearchParams(location.search).get('type');
+                  const path = item === 'Flights' ? '/flights' : 
+                               item === 'Hotels' ? '/search?type=hotel' : 
+                               item === 'Movies' ? '/movies' : 
+                               item === 'Concerts' ? '/concerts' : 
+                               item === 'Offers' ? '/offers' : '/planner';
+                  const isActive = location.pathname === path ||
+                    (item === 'Hotels' && location.pathname === '/search' && searchType === 'hotel') ||
+                    (item === 'Flights' && location.pathname === '/search' && searchType === 'flight');
+
+                  return (
+                    <Link
+                      key={item}
+                      to={path}
+                      className={`flex items-center justify-between px-4 py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] transition-all ${
+                        isActive
+                          ? 'bg-indigo-600 text-white'
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900'
+                      }`}
+                    >
+                      <span>{item}</span>
+                      <ChevronDown className={`w-4 h-4 rotate-[-90deg] ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                    </Link>
+                  );
+                })}
+
+                <div className="mt-3 border-t border-slate-100 dark:border-slate-800 pt-3">
+                  {user ? (
+                    <>
+                      <Link to="/dashboard" className="flex items-center gap-3 px-4 py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900">
+                        <User className="w-4 h-4" />
+                        Dashboard
+                      </Link>
+                      <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
+                        <LogOut className="w-4 h-4" />
+                        Sign Out
+                      </button>
+                    </>
+                  ) : (
+                    <Link to="/login" className="flex items-center justify-center azure-btn px-4 py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em]">
+                      Sign In
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.nav>
   );

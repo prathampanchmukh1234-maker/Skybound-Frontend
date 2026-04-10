@@ -123,7 +123,7 @@ const AppContent: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen overflow-x-hidden">
       <Navbar />
       <main className="flex-grow">
         <AnimatePresence mode="wait">
@@ -182,20 +182,20 @@ const AppContent: React.FC = () => {
       <footer className="bg-slate-950 text-slate-400 pt-20 pb-12 px-6 border-t border-white/5">
         <div className="max-w-7xl mx-auto">
           {/* CTA Band */}
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-700 rounded-[3rem] p-12 md:p-20 mb-32 relative overflow-hidden">
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-700 rounded-[2.5rem] md:rounded-[3rem] p-8 sm:p-12 md:p-20 mb-20 md:mb-32 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
               <div className="text-center md:text-left">
-                <h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter mb-6">Ready for your next <br/> masterpiece?</h2>
-                <p className="text-indigo-100 text-lg font-medium opacity-80">Join 50,000+ travelers experiencing the SykBound difference.</p>
+                <h2 className="text-3xl sm:text-4xl md:text-6xl font-black text-white tracking-tighter mb-6">Ready for your next <br/> masterpiece?</h2>
+                <p className="text-indigo-100 text-base md:text-lg font-medium opacity-80">Join 50,000+ travelers experiencing the SykBound difference.</p>
               </div>
-              <Link to="/login" className="bg-white text-indigo-600 px-12 py-6 rounded-full font-black text-xs uppercase tracking-[0.2em] shadow-2xl hover:scale-105 transition-transform">
+              <Link to="/login" className="bg-white text-indigo-600 px-8 sm:px-12 py-4 sm:py-6 rounded-full font-black text-[10px] sm:text-xs uppercase tracking-[0.2em] shadow-2xl hover:scale-105 transition-transform">
                 Get Started Now
               </Link>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-16 mb-32">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-10 md:gap-16 mb-20 md:mb-32">
             <div className="col-span-2 space-y-8">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-xl ring-1 ring-white/10">
@@ -244,11 +244,11 @@ const AppContent: React.FC = () => {
             </div>
           </div>
           
-          <div className="flex flex-col md:flex-row justify-between items-center pt-12 border-t border-white/5 gap-8">
-            <div className="text-[10px] font-black uppercase tracking-[0.4em] opacity-40">
+          <div className="flex flex-col md:flex-row justify-between items-center pt-12 border-t border-white/5 gap-6 md:gap-8 text-center md:text-left">
+            <div className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.3em] sm:tracking-[0.4em] opacity-40">
               © {new Date().getFullYear()} SykBound Premium Systems. Built in India.
             </div>
-            <div className="flex gap-8 text-[9px] font-black uppercase tracking-widest opacity-40">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-8 text-[9px] font-black uppercase tracking-widest opacity-40">
               <span className="hover:opacity-100 cursor-pointer transition-opacity">Status: All Systems Operational</span>
               <span className="hover:opacity-100 cursor-pointer transition-opacity">v2.4.0-Premium</span>
             </div>
@@ -266,7 +266,7 @@ const AppContent: React.FC = () => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.5, y: 20 }}
             onClick={scrollToTop}
-            className="fixed bottom-10 left-10 w-14 h-14 bg-indigo-600 text-white rounded-2xl shadow-2xl shadow-indigo-600/40 flex items-center justify-center z-[90] hover:bg-indigo-700 transition-all group"
+            className="fixed bottom-6 right-6 sm:bottom-10 sm:left-10 sm:right-auto w-12 h-12 sm:w-14 sm:h-14 bg-indigo-600 text-white rounded-2xl shadow-2xl shadow-indigo-600/40 flex items-center justify-center z-[90] hover:bg-indigo-700 transition-all group"
           >
             <ChevronUp className="w-6 h-6 group-hover:-translate-y-1 transition-transform" />
           </motion.button>
