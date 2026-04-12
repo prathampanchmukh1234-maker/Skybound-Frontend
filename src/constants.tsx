@@ -26,7 +26,7 @@ export const MOVIES: Movie[] = [
     description: 'The Avengers reunite to face their greatest challenge yet: Victor von Doom, who seeks to reshape reality in his own image.',
     cast: ['Robert Downey Jr.', 'Benedict Cumberbatch', 'Tom Holland'],
     director: 'Anthony & Joe Russo',
-    trailerUrl: 'https://www.youtube.com/embed/nPKP3GdIBCY'
+    trailerUrl: 'https://www.youtube.com/embed/_35oQn-K6g8'
   },
   {
     id: 'm-2',
@@ -40,7 +40,7 @@ export const MOVIES: Movie[] = [
     description: 'Bruce Wayne continues his journey as the Dark Knight, facing a new wave of corruption and a mysterious new adversary in Gotham City.',
     cast: ['Robert Pattinson', 'Zoë Kravitz', 'Jeffrey Wright'],
     director: 'Matt Reeves',
-    trailerUrl: 'https://www.youtube.com/embed/NsHAJ2ONAEM'
+    trailerUrl: 'https://www.youtube.com/embed/T7_zMl_ZhdQ'
   },
   {
     id: 'm-3',
@@ -54,7 +54,7 @@ export const MOVIES: Movie[] = [
     description: 'The saga continues as the legendary resistance faces new challenges in this epic historical action drama.',
     cast: ['Akshay Kumar', 'Parineeti Chopra'],
     director: 'Anurag Singh',
-    trailerUrl: 'https://www.youtube.com/embed/mATlJJJFkJY'
+    trailerUrl: 'https://www.youtube.com/embed/r-7g08INMSI'
   },
   {
     id: 'm-5',
@@ -68,7 +68,7 @@ export const MOVIES: Movie[] = [
     description: 'Salman Khan returns in a powerful role as Sikandar, a man on a mission to protect his legacy.',
     cast: ['Salman Khan', 'Rashmika Mandanna'],
     director: 'A.R. Murugadoss',
-    trailerUrl: 'https://www.youtube.com/embed/56K_oCoFHso'
+    trailerUrl: 'https://www.youtube.com/embed/BAk5ZCoTWY8'
   },
   {
     id: 'm-6',
@@ -82,7 +82,7 @@ export const MOVIES: Movie[] = [
     description: 'A group of Marvel antiheroes recruited by shadowy government forces discover they have more in common than they realize.',
     cast: ['Florence Pugh', 'Sebastian Stan', 'David Harbour'],
     director: 'Jake Schreier',
-    trailerUrl: 'https://www.youtube.com/embed/XaOp4D8IK3k'
+    trailerUrl: 'https://www.youtube.com/embed/-sAOWhvheK8'
   },
   {
     id: 'm-7',
@@ -96,7 +96,7 @@ export const MOVIES: Movie[] = [
     description: 'Ethan Hunt and his IMF team embark on their most dangerous mission yet, facing a global threat that could change the world forever.',
     cast: ['Tom Cruise', 'Hayley Atwell', 'Ving Rhames'],
     director: 'Christopher McQuarrie',
-    trailerUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
+    trailerUrl: 'https://www.youtube.com/embed/fsQgc9pCyDU'
   },
   {
     id: 'm-8',
@@ -110,7 +110,7 @@ export const MOVIES: Movie[] = [
     description: 'The hilarious ensemble returns for another round of chaotic fun and mistaken identities in this fifth installment.',
     cast: ['Akshay Kumar', 'Riteish Deshmukh', 'Abhishek Bachchan'],
     director: 'Tarun Mansukhani',
-    trailerUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
+    trailerUrl: 'https://www.youtube.com/embed/xGQuT1wm2qk'
   },
   {
     id: 'm-9',
@@ -124,7 +124,7 @@ export const MOVIES: Movie[] = [
     description: 'The ultimate showdown continues as two elite agents face off in a high-stakes battle across the globe.',
     cast: ['Hrithik Roshan', 'NTR Jr.', 'Kiara Advani'],
     director: 'Ayan Mukerji',
-    trailerUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
+    trailerUrl: 'https://www.youtube.com/embed/9l5QY7BJmHQ'
   },
   {
     id: 'm-10',
@@ -138,7 +138,7 @@ export const MOVIES: Movie[] = [
     description: 'A gritty underworld drama set in the heart of Maharashtra, following the rise of a new power.',
     cast: ['Ankush Chaudhari', 'Pooja Sawant'],
     director: 'Aditya Sarpotdar',
-    trailerUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
+    trailerUrl: 'https://www.youtube.com/embed/BKOVzHcjEIo'
   },
   {
     id: 'm-11',
@@ -152,7 +152,7 @@ export const MOVIES: Movie[] = [
     description: 'The saga continues as the stakes get higher and the revenge gets deadlier.',
     cast: ['Ankush Chaudhari', 'Pooja Sawant'],
     director: 'Aditya Sarpotdar',
-    trailerUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
+    trailerUrl: 'https://www.youtube.com/embed/NHk7scrb_9I'
   }
 ];
 
