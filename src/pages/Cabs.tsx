@@ -68,6 +68,12 @@ const Cabs: React.FC = () => {
     });
   };
 
+  const formattedPickupDate = new Date(formData.date).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  });
+
   return (
     <div className="pt-32 pb-20 bg-slate-50 dark:bg-slate-950 min-h-screen">
       <div className="max-w-7xl mx-auto px-6">
@@ -202,17 +208,21 @@ const Cabs: React.FC = () => {
               transition={{ delay: idx * 0.1 }}
               className="bg-white dark:bg-slate-900 p-10 rounded-3xl border border-slate-100 dark:border-slate-800 hover:shadow-2xl transition-all group"
             >
-              <div className="h-40 flex items-center justify-center mb-8">
+              <div className="relative h-44 overflow-hidden rounded-[1.75rem] mb-8 border border-slate-100 dark:border-slate-800">
                 <img 
                   src={cab.image} 
                   alt={cab.type} 
-                  className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500" 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
                   referrerPolicy="no-referrer"
                   loading="lazy"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?q=80&w=1200';
                   }}
                 />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/30 via-transparent to-transparent"></div>
+                <div className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-indigo-600 shadow-sm">
+                  {cab.type}
+                </div>
               </div>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
@@ -231,6 +241,10 @@ const Cabs: React.FC = () => {
                     <Briefcase className="w-3 h-3" />
                     <span className="text-[10px] font-black uppercase tracking-widest">{cab.capacity} Bags</span>
                   </div>
+                </div>
+                <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 dark:bg-indigo-900/20 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-indigo-600">
+                  <Clock className="w-3 h-3" />
+                  <span>Pickup {formattedPickupDate}</span>
                 </div>
                 <p className="text-xs font-bold text-slate-500 leading-relaxed">{cab.example}</p>
                 <div className="pt-8 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between">

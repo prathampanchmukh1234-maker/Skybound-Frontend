@@ -195,6 +195,23 @@ const getFlightVisual = (airline: string, fallbackId: string) => FLIGHT_IMAGE_BY
 const getTrainVisual = (name: string, fallbackId: string) => TRAIN_IMAGE_BY_NAME[name] || getUnsplashUrl(fallbackId);
 const getBusVisual = (operator: string, fallbackId: string) => BUS_IMAGE_BY_OPERATOR[operator] || getUnsplashUrl(fallbackId);
 
+const formatServiceDate = (date: string, type: string) => {
+  if (!date) return '';
+
+  const parsedDate = new Date(date);
+  if (Number.isNaN(parsedDate.getTime())) return '';
+
+  const label = parsedDate.toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  });
+
+  if (type === 'hotel') return `Check-in ${label}`;
+  if (type === 'cab') return `Pickup ${label}`;
+  return `Travel ${label}`;
+};
+
 interface DetailsModalProps {
   item: any;
   type: string;
@@ -439,6 +456,7 @@ const SearchResults: React.FC = () => {
   }, [type]);
 
   const departureDateParam = searchParams.get('departure') || '';
+  const formattedServiceDate = formatServiceDate(departureDateParam, type);
 
   useEffect(() => {
     setLoading(true);
@@ -856,6 +874,12 @@ const SearchResults: React.FC = () => {
                     )}
                     
                     <div className="w-full md:w-44 shrink-0 text-right">
+                      {formattedServiceDate && (
+                        <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-indigo-50 dark:bg-indigo-900/20 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-indigo-600">
+                          <i className="fa-solid fa-calendar-days"></i>
+                          <span>{formattedServiceDate}</span>
+                        </div>
+                      )}
                       <div className="text-4xl font-black text-slate-900 dark:text-white font-display tracking-tighter">{convertPrice(item.price)}</div>
                       <button onClick={() => handleSelect(item)} className="w-full mt-6 py-4 bg-indigo-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/10 active:scale-95">Select</button>
                     </div>
@@ -879,6 +903,9 @@ const SearchResults: React.FC = () => {
                       <div className="min-w-0">
                         <div className="text-[10px] font-black uppercase text-indigo-600 mb-2 tracking-widest">Live Inventory</div>
                         <p className="text-sm font-bold text-slate-500 truncate">{item.amenities?.slice(0, 3).join(' • ') || 'Premium Service'}</p>
+                        {formattedServiceDate && (
+                          <p className="mt-2 text-[10px] font-black uppercase tracking-widest text-slate-400">{formattedServiceDate}</p>
+                        )}
                       </div>
                     </div>
                     <div className="flex justify-end items-center gap-4">

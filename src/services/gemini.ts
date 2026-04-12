@@ -1,104 +1,204 @@
 
-import { GoogleGenAI } from "@google/genai";
+const BASE_API_URL = import.meta.env.VITE_API_URL || '';
 
-const offlineNavigator = (query: string) => {
-  const text = query.toLowerCase();
-  const today = new Date().toISOString().split('T')[0];
+type IntentType = 'flight' | 'bus' | 'train' | 'hotel' | 'cab' | 'movie' | 'concert' | 'activity' | 'visa' | 'insurance';
 
-  const intentMap = [
-    { keywords: ['flight', 'plane'], type: 'flight', ack: 'I can help with flights.' },
-    { keywords: ['bus'], type: 'bus', ack: 'I can help with buses.' },
-    { keywords: ['train'], type: 'train', ack: 'I can help with trains.' },
-    { keywords: ['hotel', 'stay'], type: 'hotel', ack: 'I can help with stays.' },
-    { keywords: ['cab', 'taxi'], type: 'cab', ack: 'I can help with cabs.' },
-    { keywords: ['movie', 'cinema'], type: 'movie', ack: 'I can help with movies.' },
-    { keywords: ['concert', 'show'], type: 'concert', ack: 'I can help with concerts.' },
-    { keywords: ['activity', 'things to do'], type: 'activity', ack: 'I can help with activities.' },
-    { keywords: ['visa'], type: 'visa', ack: 'I can help with visa services.' },
-    { keywords: ['insurance'], type: 'insurance', ack: 'I can help with insurance.' }
+type ConversationMemory = {
+  serviceType: IntentType | '';
+  destination: string;
+  date: string;
+  hasBookingIntent: boolean;
+};
+
+const intentMap: { keywords: string[]; type: IntentType; ack: string }[] = [
+  { keywords: ['flight', 'plane'], type: 'flight', ack: 'I can help with flights.' },
+  { keywords: ['bus'], type: 'bus', ack: 'I can help with buses.' },
+  { keywords: ['train'], type: 'train', ack: 'I can help with trains.' },
+  { keywords: ['hotel', 'stay'], type: 'hotel', ack: 'I can help with stays.' },
+  { keywords: ['cab', 'taxi'], type: 'cab', ack: 'I can help with cabs.' },
+  { keywords: ['movie', 'cinema'], type: 'movie', ack: 'I can help with movies.' },
+  { keywords: ['concert', 'show'], type: 'concert', ack: 'I can help with concerts.' },
+  { keywords: ['activity', 'things to do'], type: 'activity', ack: 'I can help with activities.' },
+  { keywords: ['visa'], type: 'visa', ack: 'I can help with visa services.' },
+  { keywords: ['insurance'], type: 'insurance', ack: 'I can help with insurance.' }
+];
+
+const destinations = ['goa', 'mumbai', 'delhi', 'pune', 'bangalore', 'dubai', 'singapore', 'london', 'paris', 'tokyo', 'shirdi'];
+const bookingIntentKeywords = [
+  'book', 'booking', 'find', 'search', 'show', 'need', 'want', 'looking for',
+  'reserve', 'get me', 'take me', 'open', 'go to', 'navigate', 'trip'
+];
+
+const parseDateFromText = (text: string) => {
+  const isoMatch = text.match(/\b(20\d{2}-\d{2}-\d{2})\b/);
+  return isoMatch?.[1] || '';
+};
+
+const buildContextText = (query: string, history: {role: string, parts: {text: string}[]}[] = []) => {
+  const historyText = history
+    .flatMap((item) => item.parts.map((part) => part.text))
+    .join(' ')
+    .toLowerCase();
+
+  return `${historyText} ${query.toLowerCase()}`.trim();
+};
+
+const hasAnyKeyword = (text: string, keywords: string[]) => keywords.some((keyword) => text.includes(keyword));
+
+const isGreetingOnly = (text: string) => {
+  const normalized = text.trim().toLowerCase();
+  return [
+    'hi',
+    'hii',
+    'hello',
+    'hey',
+    'yo',
+    'namaste',
+    'good morning',
+    'good afternoon',
+    'good evening'
+  ].includes(normalized);
+};
+
+const getLastModelText = (history: {role: string, parts: {text: string}[]}[] = []) => {
+  for (let i = history.length - 1; i >= 0; i -= 1) {
+    if (history[i].role === 'model') {
+      return history[i].parts.map((part) => part.text).join(' ').toLowerCase();
+    }
+  }
+  return '';
+};
+
+const isDestinationOnlyReply = (query: string, destinations: string[]) => {
+  const normalized = query.trim().toLowerCase().replace(/[?.!,]/g, '');
+  return destinations.includes(normalized);
+};
+
+const toLabel = (value: string) => value ? value.charAt(0).toUpperCase() + value.slice(1) : '';
+
+const getConversationMemory = (query: string, history: {role: string, parts: {text: string}[]}[] = []): ConversationMemory => {
+  const texts = [
+    ...history.flatMap((item) => item.parts.map((part) => part.text)),
+    query
   ];
 
-  const match = intentMap.find((entry) => entry.keywords.some((keyword) => text.includes(keyword)));
-  const destinations = ['goa', 'mumbai', 'delhi', 'pune', 'bangalore', 'dubai', 'singapore', 'london', 'paris', 'tokyo', 'shirdi'];
-  const foundDestination = destinations.find((city) => text.includes(city));
-  const destinationLabel = foundDestination ? foundDestination.charAt(0).toUpperCase() + foundDestination.slice(1) : '';
+  let serviceType: IntentType | '' = '';
+  let destination = '';
+  let date = '';
+  let hasBookingIntent = false;
 
-  if (match && destinationLabel) {
+  for (const rawText of texts) {
+    const text = rawText.toLowerCase();
+
+    const matchedIntent = intentMap.find((entry) => entry.keywords.some((keyword) => text.includes(keyword)));
+    if (matchedIntent) {
+      serviceType = matchedIntent.type;
+    }
+
+    const foundDestination = destinations.find((city) => text.includes(city));
+    if (foundDestination) {
+      destination = foundDestination;
+    }
+
+    const foundDate = parseDateFromText(text);
+    if (foundDate) {
+      date = foundDate;
+    }
+
+    if (hasAnyKeyword(text, bookingIntentKeywords)) {
+      hasBookingIntent = true;
+    }
+  }
+
+  return { serviceType, destination, date, hasBookingIntent };
+};
+
+const offlineNavigator = (query: string, history: {role: string, parts: {text: string}[]}[] = []) => {
+  const text = buildContextText(query, history);
+  const latestText = query.trim().toLowerCase();
+  const today = new Date().toISOString().split('T')[0];
+  const memory = getConversationMemory(query, history);
+  const match = memory.serviceType ? intentMap.find((entry) => entry.type === memory.serviceType) : undefined;
+  const destinationLabel = toLabel(memory.destination);
+  const lastModelText = getLastModelText(history);
+  const userJustSentDestination = isDestinationOnlyReply(query, destinations);
+
+  if (isGreetingOnly(latestText)) {
+    return 'Hi! I am SykBound AI. I can help with flights, hotels, trains, buses, cabs, movies, concerts, visas, insurance, and trip ideas. What would you like help with today?';
+  }
+
+  if (!match) {
+    return 'I can chat normally and also help you plan or book flights, hotels, trains, buses, cabs, movies, concerts, visas, insurance, and activities. Tell me what you need, and I will help step by step.';
+  }
+
+  if (!memory.hasBookingIntent && !memory.date && !destinationLabel) {
+    return `${match.ack} What would you like to do with ${match.type === 'hotel' ? 'stays' : `${match.type}s`} today? I can answer questions, help you compare options, or start a booking when you are ready.`;
+  }
+
+  if (destinationLabel && memory.date) {
     return `${match.ack} Opening options for ${destinationLabel}. 
-COMMAND:NAVIGATE|type=${match.type}|to=${destinationLabel}|date=${today}`;
+COMMAND:NAVIGATE|type=${match.type}|to=${destinationLabel}|date=${memory.date}`;
   }
 
-  if (match) {
-    return `${match.ack} Opening that section now.
-COMMAND:NAVIGATE|type=${match.type}`;
+  if (!destinationLabel && memory.date && memory.hasBookingIntent) {
+    return `${match.ack} I have your date as ${memory.date}. Which destination should I use?`;
   }
 
-  return "I can help with flights, hotels, buses, trains, cabs, movies, concerts, visa services, and insurance. Tell me the service plus destination you want.";
+  if (destinationLabel) {
+    if (userJustSentDestination && lastModelText.includes('date')) {
+      return `${destinationLabel} sounds great. What date should I use for your ${match.type === 'hotel' ? 'stay' : match.type}? Send it in YYYY-MM-DD format, like ${today}.`;
+    }
+
+    if (memory.hasBookingIntent) {
+      return `${match.ack} I have the destination as ${destinationLabel}. Tell me your travel date in YYYY-MM-DD format and I will take you to the right options.`;
+    }
+
+    return `${match.ack} You mentioned ${destinationLabel}. If you want me to start a search, send your travel date in YYYY-MM-DD format.`;
+  }
+
+  if (memory.hasBookingIntent) {
+    if (latestText === 'yes' || latestText === 'ok' || latestText === 'okay' || latestText === 'sure') {
+      return `${match.ack} Perfect. Share the destination and date in YYYY-MM-DD format, and I will continue from there.`;
+    }
+
+    if (memory.date && !destinationLabel) {
+      return `${match.ack} I have the date as ${memory.date}. Now send the destination so I can continue.`;
+    }
+
+    if (!memory.date && destinationLabel) {
+      return `${match.ack} I have ${destinationLabel}. Now send the date in YYYY-MM-DD format so I can continue.`;
+    }
+
+    if (!destinationLabel && !memory.date) {
+      return `${match.ack} Tell me the destination and date you want in YYYY-MM-DD format, and I will help you search properly.`;
+    }
+  }
+
+  return `${match.ack} Ask me for a destination and date whenever you want me to start searching.`;
 };
 
 // Use an exported function to handle travel assistance queries via Gemini
 export const getTravelAssistance = async (query: string, history: {role: string, parts: {text: string}[]}[] = []) => {
-  const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
-  const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
-  
-  // Create a new GoogleGenAI instance right before making an API call to ensure it always uses the most up-to-date API key.
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || process.env.API_KEY;
-  if (!apiKey || apiKey.includes('placeholder')) {
-    console.warn("Gemini API key is missing or invalid.");
-    return offlineNavigator(query);
-  }
-
-  const ai = new GoogleGenAI({ apiKey });
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
-
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
-      contents: [
-        ...history,
-        { role: 'user', parts: [{ text: query }] }
-      ],
-      config: {
-        systemInstruction: `You are "SykBound AI", the elite travel & entertainment concierge. 
-        Today is April 7, 2026.
-
-        Your goal is to help users book:
-        1. TRAVEL: Flights, Buses, Trains, Cabs, Hotels.
-        2. ENTERTAINMENT: Movies (current Indian theatrical releases), Concerts (Lollapalooza, Arijit Singh, etc.), Activities.
-        3. SERVICES: Visa assistance, Travel Insurance, Gift Cards.
-
-        GUIDELINES:
-        - Be conversational, premium, and helpful. Use a mix of English and Hindi/Hinglish where appropriate.
-        - ALWAYS ask for the travel/event DATE first before navigating.
-        - Once you have the necessary details (Destination/Event + Date), confirm with the user and then emit a navigation command.
-        - COMMAND FORMAT: To navigate the app, you MUST include a single line at the end of your response in this EXACT format:
-          COMMAND:NAVIGATE|type=[flight/bus/train/hotel/movie/concert/activity/visa/insurance]|to=[Destination]|date=[YYYY-MM-DD]
-        
-        - If you don't have a specific destination or date yet, you can just navigate to the service page:
-          COMMAND:NAVIGATE|type=[flight/bus/train/hotel/movie/concert/activity/visa/insurance]
-
-        Example 1: "Sure! I can help you book a flight to Goa for 2026-04-20. Redirecting you to our flight search now...
-        COMMAND:NAVIGATE|type=flight|to=Goa|date=2026-04-20"
-
-        Example 2: "I'll take you to our Visa assistance page where you can start your application.
-        COMMAND:NAVIGATE|type=visa"
-
-        Response length: Keep it under 3 sentences.`,
-        temperature: 0.8,
-        topP: 0.95
-      }
+    const response = await fetch(`${BASE_API_URL}/api/ai/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        query,
+        history
+      })
     });
-    clearTimeout(timeoutId);
-    // The response.text property directly returns the extracted string output.
-    return response.text || offlineNavigator(query);
-  } catch (error: any) {
-    clearTimeout(timeoutId);
-    if (error.name === 'AbortError') {
-      return offlineNavigator(query);
+
+    if (!response.ok) {
+      return offlineNavigator(query, history);
     }
-    console.error("Gemini Error:", error);
-    return offlineNavigator(query);
+
+    const data = await response.json();
+    return typeof data?.text === 'string' && data.text.trim() ? data.text : offlineNavigator(query, history);
+  } catch (error) {
+    console.error('AI chat request failed:', error);
+    return offlineNavigator(query, history);
   }
 };
