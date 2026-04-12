@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Music, MapPin, Calendar, Star, ArrowRight, Search, SlidersHorizontal, Ticket, ChevronLeft } from 'lucide-react';
+import { Music, MapPin, Calendar, Star, ArrowRight, Search, SlidersHorizontal, Ticket, ChevronLeft, X } from 'lucide-react';
 import { CONCERTS } from '../constants';
 import { motion } from 'framer-motion';
 import { useGlobal } from '../context/GlobalContext';
@@ -10,41 +10,67 @@ const Concerts: React.FC = () => {
   const { convertPrice } = useGlobal();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [selectedCity, setSelectedCity] = useState<string>('All Cities');
+  const [maxPrice, setMaxPrice] = useState<number>(10000);
+  const [sortBy, setSortBy] = useState<'recommended' | 'priceLow' | 'priceHigh' | 'dateSoonest'>('recommended');
 
   const categories = ['Music', 'Comedy', 'Theater', 'Sports'];
+  const cities = useMemo(() => {
+    const derivedCities = CONCERTS.map((concert) => concert.venue.split(',').pop()?.trim()).filter(Boolean) as string[];
+    return ['All Cities', ...Array.from(new Set(derivedCities))];
+  }, []);
 
-  const filteredConcerts = CONCERTS.filter(c => {
-    const matchesSearch = c.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          c.artist.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory ? c.category === selectedCategory : true;
-    
-    // Date & Time Filtering
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    const concertDate = c.date; // YYYY-MM-DD
-    
-    if (concertDate < todayStr) return false;
-    
-    if (concertDate === todayStr && c.time) {
-      const currentHour = today.getHours();
-      const currentMinute = today.getMinutes();
+  const filteredConcerts = useMemo(() => {
+    const filtered = CONCERTS.filter(c => {
+      const concertCity = c.venue.split(',').pop()?.trim() || '';
+      const matchesSearch = c.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            c.artist.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            c.venue.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = selectedCategory ? c.category === selectedCategory : true;
+      const matchesCity = selectedCity === 'All Cities' ? true : concertCity === selectedCity;
+      const matchesPrice = c.price <= maxPrice;
       
-      const timeParts = c.time.match(/(\d+):(\d+)\s*(AM|PM)/i);
-      if (timeParts) {
-        let hour = parseInt(timeParts[1]);
-        const minute = parseInt(timeParts[2]);
-        const ampm = timeParts[3].toUpperCase();
-        if (ampm === 'PM' && hour !== 12) hour += 12;
-        if (ampm === 'AM' && hour === 12) hour = 0;
+      // Date & Time Filtering
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+      const concertDate = c.date;
+      
+      if (concertDate < todayStr) return false;
+      
+      if (concertDate === todayStr && c.time) {
+        const currentHour = today.getHours();
+        const currentMinute = today.getMinutes();
         
-        if (hour < currentHour || (hour === currentHour && minute < currentMinute + 60)) {
-          return false; // Hide if event starts in less than 60 mins or already started
+        const timeParts = c.time.match(/(\d+):(\d+)\s*(AM|PM)/i);
+        if (timeParts) {
+          let hour = parseInt(timeParts[1]);
+          const minute = parseInt(timeParts[2]);
+          const ampm = timeParts[3].toUpperCase();
+          if (ampm === 'PM' && hour !== 12) hour += 12;
+          if (ampm === 'AM' && hour === 12) hour = 0;
+          
+          if (hour < currentHour || (hour === currentHour && minute < currentMinute + 60)) {
+            return false;
+          }
         }
       }
+
+      return matchesSearch && matchesCategory && matchesCity && matchesPrice;
+    });
+
+    if (sortBy === 'priceLow') {
+      filtered.sort((a, b) => a.price - b.price);
+    } else if (sortBy === 'priceHigh') {
+      filtered.sort((a, b) => b.price - a.price);
+    } else if (sortBy === 'dateSoonest') {
+      filtered.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    } else {
+      filtered.sort((a, b) => b.rating - a.rating);
     }
 
-    return matchesSearch && matchesCategory;
-  });
+    return filtered;
+  }, [maxPrice, searchQuery, selectedCategory, selectedCity, sortBy]);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pt-32 pb-20 px-6">
@@ -85,12 +111,93 @@ const Concerts: React.FC = () => {
                 className="w-full sm:w-80 pl-14 pr-8 py-5 bg-white dark:bg-slate-900 border-none rounded-2xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all shadow-xl shadow-slate-200/50 dark:shadow-none"
               />
             </div>
-            <button className="flex items-center justify-center gap-3 px-8 py-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-indigo-400 transition-all shadow-xl shadow-slate-200/50 dark:shadow-none">
+            <button
+              onClick={() => setIsFilterOpen((prev) => !prev)}
+              className="flex items-center justify-center gap-3 px-8 py-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-indigo-400 transition-all shadow-xl shadow-slate-200/50 dark:shadow-none"
+            >
               <SlidersHorizontal className="w-4 h-4 text-indigo-600" />
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400">Filters</span>
             </button>
           </div>
         </div>
+
+        {isFilterOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-12 rounded-[2rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-xl shadow-slate-200/40 dark:shadow-none"
+          >
+            <div className="mb-8 flex items-center justify-between">
+              <h2 className="text-sm font-black uppercase tracking-[0.25em] text-slate-500">Concert Filters</h2>
+              <button
+                onClick={() => setIsFilterOpen(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 text-slate-400 transition-colors hover:text-indigo-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">City</label>
+                <select
+                  value={selectedCity}
+                  onChange={(e) => setSelectedCity(e.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-bold outline-none transition-all focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-950"
+                >
+                  {cities.map((city) => (
+                    <option key={city} value={city}>{city}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Max Price</label>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 dark:border-slate-800 dark:bg-slate-950">
+                  <div className="mb-4 text-lg font-black text-indigo-600">{convertPrice(maxPrice)}</div>
+                  <input
+                    type="range"
+                    min={500}
+                    max={10000}
+                    step={500}
+                    value={maxPrice}
+                    onChange={(e) => setMaxPrice(Number(e.target.value))}
+                    className="w-full accent-indigo-600"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Sort By</label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as 'recommended' | 'priceLow' | 'priceHigh' | 'dateSoonest')}
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm font-bold outline-none transition-all focus:border-indigo-500 dark:border-slate-800 dark:bg-slate-950"
+                >
+                  <option value="recommended">Recommended</option>
+                  <option value="dateSoonest">Date: Soonest</option>
+                  <option value="priceLow">Price: Low to High</option>
+                  <option value="priceHigh">Price: High to Low</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button
+                onClick={() => {
+                  setSelectedCity('All Cities');
+                  setMaxPrice(10000);
+                  setSortBy('recommended');
+                  setSelectedCategory(null);
+                  setSearchQuery('');
+                }}
+                className="rounded-2xl bg-slate-100 px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-600 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+              >
+                Reset Filters
+              </button>
+            </div>
+          </motion.div>
+        )}
 
         {/* Categories */}
         <div className="flex gap-4 overflow-x-auto pb-8 mb-12 scrollbar-hide">
