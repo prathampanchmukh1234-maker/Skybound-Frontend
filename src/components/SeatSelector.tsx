@@ -228,11 +228,135 @@ const SeatSelector: React.FC<SeatSelectorProps> = ({ type, onSelect, selectedSea
     );
   };
 
+  const renderFlightLayout = () => {
+    const seatLetters = ['A', 'B', 'C', 'D', 'E', 'F'];
+    const bookedFlightSeats = item?.occupiedSeats || [];
+    const cabinSections = [
+      { label: 'Business', rows: Array.from({ length: 4 }, (_, index) => index + 1), price: 4200, accent: 'text-amber-500' },
+      { label: 'Premium', rows: Array.from({ length: 6 }, (_, index) => index + 5), price: 2200, accent: 'text-indigo-500' },
+      { label: 'Economy', rows: Array.from({ length: 18 }, (_, index) => index + 11), price: 0, accent: 'text-slate-500' }
+    ];
+
+    return (
+      <div className="flex flex-col items-center gap-8">
+        <div className="w-full max-w-3xl rounded-[2.5rem] border border-slate-200 dark:border-slate-800 bg-gradient-to-b from-slate-100 to-white dark:from-slate-900 dark:to-slate-950 p-5 md:p-8 shadow-xl">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Aircraft Layout</p>
+              <h4 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">3-3 Narrow Body Cabin</h4>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Capacity</p>
+              <p className="text-sm font-black text-indigo-600">{cabinSections.reduce((total, section) => total + section.rows.length * 6, 0)} Seats</p>
+            </div>
+          </div>
+
+          <div className="mb-6 rounded-[2rem] bg-slate-900 text-white py-4 text-center shadow-lg">
+            <p className="text-[10px] font-black uppercase tracking-[0.45em] opacity-70">Cockpit</p>
+            <p className="mt-1 text-xs font-bold uppercase tracking-[0.25em]">Front of Aircraft</p>
+          </div>
+
+          <div className="space-y-8 max-h-[70vh] overflow-y-auto pr-1">
+            {cabinSections.map((section) => (
+              <div key={section.label} className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
+                  <div className="text-center">
+                    <p className={`text-[10px] font-black uppercase tracking-[0.25em] ${section.accent}`}>{section.label}</p>
+                    <p className="text-[10px] font-bold text-slate-400">
+                      {section.price > 0 ? (convertPrice ? convertPrice(section.price) : `₹${section.price}`) : 'Included Fare'}
+                    </p>
+                  </div>
+                  <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="grid grid-cols-[32px_repeat(3,minmax(0,1fr))_24px_repeat(3,minmax(0,1fr))_32px] gap-2 px-1">
+                    <div></div>
+                    {seatLetters.slice(0, 3).map((letter) => (
+                      <div key={`${section.label}-left-${letter}`} className="text-center text-[10px] font-black text-slate-400">{letter}</div>
+                    ))}
+                    <div className="text-center text-[9px] font-black text-slate-300">|</div>
+                    {seatLetters.slice(3).map((letter) => (
+                      <div key={`${section.label}-right-${letter}`} className="text-center text-[10px] font-black text-slate-400">{letter}</div>
+                    ))}
+                    <div></div>
+                  </div>
+
+                  {section.rows.map((rowNumber) => (
+                    <div key={`${section.label}-${rowNumber}`} className="grid grid-cols-[32px_repeat(3,minmax(0,1fr))_24px_repeat(3,minmax(0,1fr))_32px] gap-2 items-center">
+                      <div className="text-center text-[10px] font-black text-slate-400">{rowNumber}</div>
+                      {seatLetters.map((letter, index) => {
+                        const seatId = `${rowNumber}${letter}`;
+                        const isBooked = bookedFlightSeats.includes(seatId) || bookedSeats.includes(seatId);
+                        const isSelected = selectedSeat === seatId || selectedSeats.includes(seatId);
+                        const isWindow = letter === 'A' || letter === 'F';
+                        const isAisle = letter === 'C' || letter === 'D';
+                        const seatTone = section.label === 'Business'
+                          ? 'border-amber-200 text-amber-600'
+                          : section.label === 'Premium'
+                            ? 'border-indigo-200 text-indigo-600'
+                            : 'border-slate-200 text-slate-600';
+
+                        return (
+                          <React.Fragment key={seatId}>
+                            {index === 3 && <div className="text-center text-[9px] font-black text-slate-300">|</div>}
+                            <button
+                              disabled={isBooked}
+                              onClick={() => onSelect(seatId)}
+                              className={`h-11 rounded-xl border text-[10px] font-black transition-all ${
+                                isBooked
+                                  ? 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-300 cursor-not-allowed'
+                                  : isSelected
+                                    ? 'bg-indigo-600 border-indigo-600 text-white scale-105 shadow-lg shadow-indigo-600/30'
+                                    : `bg-white dark:bg-slate-900 ${seatTone} hover:border-indigo-500 hover:text-indigo-600`
+                              }`}
+                              title={`${seatId}${isWindow ? ' Window' : isAisle ? ' Aisle' : ' Middle'}`}
+                            >
+                              <span className="block leading-none">{seatId}</span>
+                              <span className="block mt-1 text-[8px] opacity-60">
+                                {isWindow ? 'W' : isAisle ? 'A' : 'M'}
+                              </span>
+                            </button>
+                          </React.Fragment>
+                        );
+                      })}
+                      <div className="text-center text-[10px] font-black text-slate-400">{rowNumber}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-500">
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full bg-white border border-slate-300 inline-block"></span>
+            Available
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full bg-indigo-600 inline-block"></span>
+            Selected
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full bg-slate-200 inline-block"></span>
+            Occupied
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
+            Business
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="text-center mb-8">
         <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter capitalize">
-          Select Your {type === 'bus' ? 'Seat' : 'Berth'}
+          Select Your {type === 'train' ? 'Berth' : 'Seat'}
         </h3>
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
           SkyBound Premium {type} Experience
@@ -242,12 +366,7 @@ const SeatSelector: React.FC<SeatSelectorProps> = ({ type, onSelect, selectedSea
       {type === 'bus' && renderBusLayout()}
       {type === 'train' && renderTrainLayout()}
       {type === 'movie' && renderMovieLayout()}
-      {type === 'flight' && (
-        <div className="text-center p-10 bg-blue-50 dark:bg-blue-900/20 rounded-[2rem] border border-blue-100 dark:border-blue-800">
-          <i className="fa-solid fa-plane-arrival text-4xl text-blue-600 mb-4 block"></i>
-          <p className="font-bold text-slate-700 dark:text-slate-300">Airline Seat Selection will be available at Web Check-in.</p>
-        </div>
-      )}
+      {type === 'flight' && renderFlightLayout()}
     </div>
   );
 };

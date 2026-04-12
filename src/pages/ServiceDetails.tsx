@@ -112,6 +112,8 @@ const ServiceDetails: React.FC = () => {
       userId: user.id,
       type: 'service',
       itemId: service.id,
+      title: service.title,
+      poster: service.image,
       totalPrice: service.price,
       details: {
         type: 'service',
@@ -121,6 +123,9 @@ const ServiceDetails: React.FC = () => {
         location: service.location,
         duration: service.duration
       },
+      venue: service.title,
+      show_time: selectedSlot,
+      travel_date: new Date().toISOString().split('T')[0],
       paymentId: null
     };
 
@@ -191,6 +196,8 @@ const ServiceDetails: React.FC = () => {
         userId: user?.id,
         type: 'service',
         itemId: service.id,
+        title: service.title,
+        poster: service.image,
         totalPrice: 0,
         details: {
           type: 'service',
@@ -200,6 +207,9 @@ const ServiceDetails: React.FC = () => {
           location: service.location,
           duration: service.duration
         },
+        venue: service.title,
+        show_time: selectedSlot,
+        travel_date: new Date().toISOString().split('T')[0],
         paymentId: 'free_trial_' + Date.now()
       });
       setTimeout(() => {

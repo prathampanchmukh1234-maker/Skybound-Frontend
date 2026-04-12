@@ -96,7 +96,7 @@ export interface Showtime {
 export interface Booking {
   id: string;
   userId: string;
-  type: 'flight' | 'hotel' | 'bus' | 'train' | 'sea' | 'holiday' | 'experience' | 'movie';
+  type: 'flight' | 'hotel' | 'bus' | 'train' | 'sea' | 'holiday' | 'experience' | 'movie' | 'concert' | 'service';
   itemId: string;
   details: any;
   totalPrice: number;
@@ -107,7 +107,7 @@ export interface Booking {
   pointsEarned: number;
   pointsRedeemed: number;
   walletUsed: number;
-  seat?: string;
+  seat?: string | string[];
   timeline?: { day: number; activities: string[] }[];
   // DB snake_case fields (from Supabase)
   user_id?: string;

@@ -6,6 +6,7 @@ import { useGlobal } from '../context/GlobalContext';
 import ETicketModal from '../components/ETicketModal';
 import { Booking, User, TripPlan } from '../types';
 import { supabase } from '../services/supabase';
+import { formatBookingDate, getBookingDisplayTime, getBookingExperienceDisplay, getBookingVenueInfo } from '../utils/ticketUtils';
 
 const Dashboard: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
   const navigate = useNavigate();
@@ -15,6 +16,9 @@ const Dashboard: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<Booking | null>(null);
   const [cancellingBooking, setCancellingBooking] = useState<string | null>(null);
+
+  const getSeatDisplay = (booking: Booking) =>
+    Array.isArray(booking.seat) ? booking.seat.join(', ') : (booking.seat || 'Standard');
 
   useEffect(() => {
     if (loadingAuth || isSyncing) return;
@@ -127,6 +131,12 @@ const Dashboard: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
                 {bookings.filter(b => b.status === 'confirmed').length > 0 ? (
                   bookings.filter(b => b.status === 'confirmed').map((b) => (
                     <div key={b.id} className="relative group">
+                      {(() => {
+                        const venueInfo = getBookingVenueInfo(b);
+                        const bookingTime = getBookingDisplayTime(b);
+                        const bookingExperience = getBookingExperienceDisplay(b);
+                        return (
+                          <>
                       <div className="absolute -left-[61px] top-0 w-12 h-12 rounded-2xl azure-btn flex items-center justify-center text-xl shadow-lg transition-transform group-hover:scale-110 overflow-hidden">
                         {b.poster ? (
                           <img src={b.poster} alt={b.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
@@ -139,13 +149,13 @@ const Dashboard: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
                           <div>
                             <h4 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
                               {b.title || (b.details as any)?.airline || (b.details as any)?.title}
-                              {b.is_free && (
+                              {(b as any).is_free && (
                                 <span className="ml-3 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-600 rounded text-[9px] font-black uppercase tracking-widest border border-green-200 dark:border-green-800">FREE</span>
                               )}
                             </h4>
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
                               {b.type === 'movie' || b.type === 'concert' || b.type === 'service' ? (
-                                <span>{Array.isArray(b.seat) ? b.seat.join(', ') : (b.seat || 'Standard')}</span>
+                                <span>{getSeatDisplay(b)}</span>
                               ) : (
                                 <span>{(b.details as any)?.from} <i className="fa-solid fa-arrow-right mx-1 text-blue-500"></i> {(b.details as any)?.to || (b.details as any)?.destination}</span>
                               )}
@@ -156,12 +166,37 @@ const Dashboard: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
                             <button onClick={() => setCancellingBooking(b.id)} className="px-6 py-2.5 bg-red-50 dark:bg-red-900/20 text-red-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-100 dark:hover:bg-red-900/40 transition-all">Cancel</button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-4 text-[10px] font-bold text-slate-500">
-                          <span>Date: {new Date(b.created_at || b.date).toLocaleDateString()}</span>
-                          <span>•</span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[10px] font-bold text-slate-500">
+                          {venueInfo.venueName && (
+                            <div className="bg-slate-50 dark:bg-slate-900/60 rounded-2xl px-4 py-3">
+                              <span className="block text-[9px] font-black uppercase tracking-[0.18em] text-slate-400 mb-1">Venue</span>
+                              <span className="text-slate-900 dark:text-white leading-tight">{venueInfo.venueName}</span>
+                            </div>
+                          )}
+                          {venueInfo.location && (
+                            <div className="bg-slate-50 dark:bg-slate-900/60 rounded-2xl px-4 py-3">
+                              <span className="block text-[9px] font-black uppercase tracking-[0.18em] text-slate-400 mb-1">Area / City</span>
+                              <span className="text-slate-900 dark:text-white leading-tight">{venueInfo.location}</span>
+                            </div>
+                          )}
+                          <div className="bg-slate-50 dark:bg-slate-900/60 rounded-2xl px-4 py-3">
+                            <span className="block text-[9px] font-black uppercase tracking-[0.18em] text-slate-400 mb-1">Date</span>
+                            <span className="text-slate-900 dark:text-white">{formatBookingDate(b)}</span>
+                          </div>
+                          <div className="bg-slate-50 dark:bg-slate-900/60 rounded-2xl px-4 py-3">
+                            <span className="block text-[9px] font-black uppercase tracking-[0.18em] text-slate-400 mb-1">{(bookingTime || bookingExperience) ? 'Time / Experience' : 'Booking ID'}</span>
+                            <span className="text-slate-900 dark:text-white break-all">{[bookingTime, bookingExperience].filter(Boolean).join(' • ') || b.id}</span>
+                          </div>
+                        </div>
+                        <div className="mt-4 flex items-center gap-4 text-[10px] font-bold text-slate-500">
                           <span>ID: {b.id}</span>
+                          <span>•</span>
+                          <span>Fare: {convertPrice(b.total_price ?? b.totalPrice)}</span>
                         </div>
                       </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   ))
                 ) : (

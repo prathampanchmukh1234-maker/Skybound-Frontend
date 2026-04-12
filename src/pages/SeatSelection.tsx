@@ -366,6 +366,9 @@ const SeatSelection: React.FC = () => {
         payment_id: 'FREE_DAILY',
         status: 'confirmed',
         is_free: true,
+        venue: theater.name,
+        travel_date: showtime.date,
+        show_time: showtime.time,
         created_at: new Date().toISOString()
       }]);
 
@@ -474,7 +477,10 @@ const SeatSelection: React.FC = () => {
         poster: movie.poster,
         seat: selectedSeats,
         totalPrice: 0,
-        paymentId: 'demo'
+        paymentId: 'demo',
+        venue: theater.name,
+        travel_date: showtime.date,
+        show_time: showtime.time
       });
       setBookingSuccess(true);
       setTimeout(() => navigate('/dashboard'), 3000);

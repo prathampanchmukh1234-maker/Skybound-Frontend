@@ -249,6 +249,9 @@ const ConcertDetails: React.FC = () => {
         total_price: 0,
         payment_id: 'free_trial',
         status: 'confirmed',
+        venue: concert.venue,
+        travel_date: concert.date,
+        show_time: concert.time,
         created_at: new Date().toISOString()
       };
 

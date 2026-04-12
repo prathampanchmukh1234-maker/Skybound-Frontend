@@ -38,26 +38,34 @@ const Booking: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
   const showToast = (message: string, type: 'success'|'error'|'info' = 'info') => setToastMsg({message, type});
   
   const { item, type } = state || {};
+  const bookingDestination = item?.to || item?.destination || item?.to_city || 'your destination';
+
+  const handleSingleSeatSelect = (seat: string) => {
+    setSelectedSeat((currentSeat) => (currentSeat === seat ? null : seat));
+  };
 
   const isFreeDemo = useMemo(() => user?.email?.includes('demo') || user?.email?.includes('test'), [user]);
 
   useEffect(() => {
     const checkFree = async () => {
-      if (!user || type !== 'movie' || !item?.id) return;
+      if (!user || !['movie', 'flight'].includes(type) || !item?.id) return;
       const today = new Date().toISOString().split('T')[0];
 
-      const { data } = await supabase
+      const query = supabase
         .from('bookings')
         .select('*')
         .eq('user_id', user.id)
-        .eq('movie_id', item.id)
         .eq('is_free', true)
         .gte('created_at', today);
+
+      const { data } = type === 'movie'
+        ? await query.eq('movie_id', item.id)
+        : await query.eq('type', 'flight');
 
       setFreeAvailable(!(data && data.length > 0));
     };
 
-    if (user && type === 'movie') checkFree();
+    if (user && ['movie', 'flight'].includes(type)) checkFree();
   }, [user, item, type]);
 
   useEffect(() => {
@@ -190,7 +198,7 @@ const Booking: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
         });
         await refreshUser();
         setLoading(false);
-        navigate("/payment-success");
+        navigate("/payment-success", { state: { type, destination: bookingDestination, title: bookingData.title } });
       }, 1500);
       return;
     }
@@ -262,7 +270,7 @@ const Booking: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
         await createBookingRecord(finalBookingData);
         await refreshUser();
         setLoading(false);
-        navigate("/payment-success");
+        navigate("/payment-success", { state: { type, destination: bookingDestination, title: finalBookingData.title } });
       },
       // FIXED: HANDLE USER EXIT (MODAL CLOSE)
       modal: {
@@ -300,18 +308,20 @@ const Booking: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
     try {
       const today = new Date().toISOString().split('T')[0];
 
-      // Check if already claimed today for this movie
-      if (type === 'movie') {
-        const { data } = await supabase
+      if (type === 'movie' || type === 'flight') {
+        const query = supabase
           .from('bookings')
           .select('*')
           .eq('user_id', user.id)
-          .eq('movie_id', item.id)
           .eq('is_free', true)
           .gte('created_at', today);
 
+        const { data } = type === 'movie'
+          ? await query.eq('movie_id', item.id)
+          : await query.eq('type', 'flight');
+
         if (data && data.length > 0) {
-          showToast('Free ticket already claimed today', 'info');
+          showToast(type === 'flight' ? 'Free flight already claimed today' : 'Free ticket already claimed today', 'info');
           setLoading(false);
           setFreeAvailable(false);
           return;
@@ -328,7 +338,7 @@ const Booking: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
         poster: item.poster || item.image || item.logo || item.operatorLogo || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=600',
         seat: selectedSeat ? [selectedSeat] : [],
         total_price: 0,
-        payment_id: type === 'movie' ? 'FREE_DAILY' : 'FREE_DEMO',
+        payment_id: type === 'movie' ? 'FREE_DAILY' : type === 'flight' ? 'FREE_DAILY_FLIGHT' : 'FREE_DEMO',
         status: 'confirmed',
         is_free: true,
         venue: item.venue,
@@ -343,7 +353,7 @@ const Booking: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
 
       await refreshUser();
       setLoading(false);
-      navigate('/payment-success');
+      navigate('/payment-success', { state: { type, destination: bookingDestination, title: item.title || item.airline || 'SykBound Service' } });
     } catch (err) {
       console.error('Free booking failed:', err);
       setLoading(false);
@@ -421,11 +431,11 @@ const Booking: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
                 {isTransport ? (
                   user ? (
                     <>
-                      <SeatSelector type={type} onSelect={setSelectedSeat} selectedSeat={selectedSeat} />
+                      <SeatSelector type={type} item={item} onSelect={handleSingleSeatSelect} selectedSeat={selectedSeat} />
                       <div className="mt-12 flex justify-end">
                         <button 
                           onClick={() => setStep(2)} 
-                          disabled={!selectedSeat && type !== 'flight'} 
+                          disabled={!selectedSeat} 
                           className="azure-btn px-16 py-5 rounded-3xl font-black uppercase tracking-widest shadow-xl disabled:opacity-50"
                         >
                           Confirm Selection
@@ -435,7 +445,7 @@ const Booking: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
                   ) : (
                     <div className="space-y-8">
                       <div className="opacity-40 pointer-events-none grayscale">
-                        <SeatSelector type={type} onSelect={() => {}} selectedSeat={null} />
+                        <SeatSelector type={type} item={item} onSelect={() => {}} selectedSeat={null} />
                       </div>
                       <LoginCTA message="Seat selection is only available for SkyBound members. Sign in to choose your favorite spot!" />
                       <div className="flex justify-center mt-8">
@@ -532,8 +542,8 @@ const Booking: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
                     <p className="text-slate-500 font-medium">You are paying <span className="font-black text-slate-900 dark:text-white">{convertPrice(finalPrice)}</span> for your booking.</p>
                   </div>
                   
-                  <div className="space-y-4">
-                    {freeAvailable && (
+                <div className="space-y-4">
+                    {freeAvailable && (type === 'movie' || type === 'flight') && (
                       <button 
                         onClick={handleFreeTicket}
                         disabled={loading}
@@ -544,7 +554,7 @@ const Booking: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
                         ) : (
                           <>
                             <Tag className="w-5 h-5" />
-                            🎟 Claim Free Ticket (Today Only)
+                            {type === 'flight' ? 'Claim Free Flight (Today Only)' : 'Claim Free Ticket (Today Only)'}
                           </>
                         )}
                       </button>
