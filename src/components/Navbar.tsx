@@ -91,7 +91,7 @@ const Navbar: React.FC = () => {
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
-  const navItems = ['Flights', 'Hotels', 'Movies', 'Concerts', 'Offers', 'AI Planner'];
+  const navItems = ['Flights', 'Hotels', 'Movies', 'Concerts', 'Offers',];
 
   return (
     <motion.nav 

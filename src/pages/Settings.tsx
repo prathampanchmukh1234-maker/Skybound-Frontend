@@ -295,11 +295,11 @@ const Settings: React.FC = () => {
                   <HelpCircle className="w-5 h-5" />
                   <span className="text-sm font-bold">Help Center</span>
                 </button>
-                <button onClick={() => window.open('https://sykbound.run.app/privacy', '_blank')} className="w-full flex items-center gap-4 text-slate-500 hover:text-indigo-600 transition-colors">
+                <button onClick={() => navigate('/privacy')} className="w-full flex items-center gap-4 text-slate-500 hover:text-indigo-600 transition-colors">
                   <Info className="w-5 h-5" />
                   <span className="text-sm font-bold">Privacy Policy</span>
                 </button>
-                <button onClick={() => window.open('https://sykbound.run.app/terms', '_blank')} className="w-full flex items-center gap-4 text-slate-500 hover:text-indigo-600 transition-colors">
+                <button onClick={() => navigate('/terms')} className="w-full flex items-center gap-4 text-slate-500 hover:text-indigo-600 transition-colors">
                   <CreditCard className="w-5 h-5" />
                   <span className="text-sm font-bold">Terms of Service</span>
                 </button>

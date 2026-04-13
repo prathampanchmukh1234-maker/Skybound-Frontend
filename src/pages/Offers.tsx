@@ -12,11 +12,11 @@ const Offers: React.FC = () => {
 
   const offers = [
     { id: 1, title: 'Summer Escape', desc: 'Get up to 40% OFF on luxury beach resorts in Bali and Maldives.', code: 'SUMMER40', category: 'hotels', img: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?q=80&w=1200' },
-    { id: 2, title: 'SkyBound First', desc: 'Flat ₹500 OFF on your first flight booking with SkyBound.', code: 'FIRSTFLY', category: 'flights', img: 'https://images.unsplash.com/photo-1436491865332-7a61a109c055?q=80&w=1200' },
-    { id: 3, title: 'Weekend Special', desc: 'Buy 1 Get 1 FREE on movie tickets every Saturday and Sunday.', code: 'MOVIES2', category: 'movies', img: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1200' },
+    { id: 2, title: 'SkyBound First', desc: 'Flat ₹500 OFF on your first flight booking with SkyBound.', code: 'FIRSTFLY', category: 'flights', img: 'https://ttgasia.2017.ttgasia.com/wp-content/uploads/sites/2/2016/12/Aviation.jpg?q=80&w=1200' },
+    { id: 3, title: 'Weekend Special', desc: 'Buy 1 Get 1 FREE on movie tickets every Saturday and Sunday.', code: 'MOVIES2', category: 'movies', img: 'https://philippinesgraphic.com.ph/wp-content/uploads/2023/11/1-18-scaled.jpg?q=80&w=1200' },
     { id: 4, title: 'Global Explorer', desc: '15% Cashback on international visa services and travel insurance.', code: 'GLOBAL15', category: 'visa', img: 'https://images.unsplash.com/photo-1526772662000-3f88f10405ff?q=80&w=1200' },
-    { id: 5, title: 'Concert Mania', desc: 'Early bird access and 10% discount on upcoming live concerts.', code: 'LIVE10', category: 'concerts', img: 'https://images.unsplash.com/photo-1459749411177-042180ceea72?q=80&w=1200' },
-    { id: 6, title: 'Road Trip Ready', desc: 'Flat ₹200 OFF on intercity cab bookings above ₹2000.', code: 'CAB200', category: 'cabs', img: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=1200' }
+    { id: 5, title: 'Concert Mania', desc: 'Early bird access and 10% discount on upcoming live concerts.', code: 'LIVE10', category: 'concerts', img: 'https://i0.pickpik.com/photos/940/311/672/concert-crowd-audience-people-cc3b48fb4f23f340a197e963fa0154cb.jpg?q=80&w=1200' },
+    { id: 6, title: 'Road Trip Ready', desc: 'Flat ₹200 OFF on intercity cab bookings above ₹2000.', code: 'CAB200', category: 'cabs', img: 'https://img.goorito.com/blog/blogs2.png?q=80&w=1200' }
   ];
 
   const filteredOffers = activeTab === 'all' ? offers : offers.filter(o => o.category === activeTab);

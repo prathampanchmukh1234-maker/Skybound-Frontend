@@ -7,6 +7,7 @@ import ETicketModal from '../components/ETicketModal';
 import { Booking, User, TripPlan } from '../types';
 import { supabase } from '../services/supabase';
 import { formatBookingDate, getBookingDisplayTime, getBookingExperienceDisplay, getBookingVenueInfo } from '../utils/ticketUtils';
+import { cancelInsurancePolicy, cancelVisaApplication, getInsurancePoliciesForUser, getVisaApplicationsForUser } from '../services/travelServices';
 
 const Dashboard: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
   const navigate = useNavigate();
@@ -16,6 +17,8 @@ const Dashboard: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<Booking | null>(null);
   const [cancellingBooking, setCancellingBooking] = useState<string | null>(null);
+  const [visaApplications, setVisaApplications] = useState<any[]>([]);
+  const [insurancePolicies, setInsurancePolicies] = useState<any[]>([]);
 
   const getSeatDisplay = (booking: Booking) =>
     Array.isArray(booking.seat) ? booking.seat.join(', ') : (booking.seat || 'Standard');
@@ -42,6 +45,12 @@ const Dashboard: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
       
       const savedPlans = await getTripPlans(globalUser.id);
       setPlans(savedPlans);
+      const [visaData, policyData] = await Promise.all([
+        getVisaApplicationsForUser(globalUser.id),
+        getInsurancePoliciesForUser(globalUser.id)
+      ]);
+      setVisaApplications(visaData);
+      setInsurancePolicies(policyData);
       setLoading(false);
     };
     
@@ -81,6 +90,42 @@ const Dashboard: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
     }
   };
 
+  const refreshTravelProtection = async () => {
+    if (!globalUser?.id) return;
+    const [visaData, policyData] = await Promise.all([
+      getVisaApplicationsForUser(globalUser.id),
+      getInsurancePoliciesForUser(globalUser.id)
+    ]);
+    setVisaApplications(visaData);
+    setInsurancePolicies(policyData);
+  };
+
+  const handleCancelVisaRequest = async (applicationId: string) => {
+    if (!globalUser?.id) return;
+
+    const success = await cancelVisaApplication(applicationId, globalUser.id);
+    if (success) {
+      await refreshTravelProtection();
+      onShowToast('Visa request cancelled successfully.', 'success');
+      return;
+    }
+
+    onShowToast('Unable to cancel the visa request right now.', 'error');
+  };
+
+  const handleCancelPolicy = async (policyId: string) => {
+    if (!globalUser?.id) return;
+
+    const success = await cancelInsurancePolicy(policyId, globalUser.id);
+    if (success) {
+      await refreshTravelProtection();
+      onShowToast('Travel policy cancelled successfully.', 'success');
+      return;
+    }
+
+    onShowToast('Unable to cancel the travel policy right now.', 'error');
+  };
+
   if (loadingAuth || loading) return (
     <div className="min-h-screen pt-40 flex flex-col items-center justify-center bg-[#fcfdfe] dark:bg-slate-950">
       <div className="w-16 h-16 azure-btn rounded-2xl flex items-center justify-center animate-bounce shadow-2xl mb-6 text-white text-2xl">
@@ -91,6 +136,21 @@ const Dashboard: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
       </div>
     </div>
   );
+
+  const latestVisaApplication = visaApplications[0];
+  const activePolicies = insurancePolicies.filter((policy) => policy.status !== 'cancelled');
+  const visaStatusTone = (status?: string) => {
+    switch ((status || '').toLowerCase()) {
+      case 'approved':
+      case 'issued':
+        return 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800';
+      case 'rejected':
+      case 'failed':
+        return 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-900/20 dark:border-rose-800';
+      default:
+        return 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800';
+    }
+  };
 
   return (
     <div className="min-h-screen pt-32 pb-20 bg-[#fcfdfe] dark:bg-slate-950 px-6">
@@ -251,6 +311,114 @@ const Dashboard: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
                       </div>
                     </div>
                   ))}
+                </div>
+              </section>
+            )}
+
+            {(latestVisaApplication || activePolicies.length > 0) && (
+              <section>
+                <h3 className="font-black text-lg uppercase tracking-widest text-slate-900 dark:text-white mb-10">Travel Protection</h3>
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                  <div className="glass p-8 rounded-[3rem] border border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Visa Request Progress</p>
+                        <h4 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mt-2">
+                          {latestVisaApplication ? latestVisaApplication.country : 'No visa requests yet'}
+                        </h4>
+                      </div>
+                      <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 flex items-center justify-center">
+                        <i className="fa-solid fa-passport text-xl"></i>
+                      </div>
+                    </div>
+
+                    {latestVisaApplication ? (
+                      <>
+                        <div className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest ${visaStatusTone(latestVisaApplication.status)}`}>
+                          <span className="w-2 h-2 rounded-full bg-current"></span>
+                          {latestVisaApplication.status || 'pending'}
+                        </div>
+                        {latestVisaApplication.status !== 'cancelled' && latestVisaApplication.status !== 'approved' && (
+                          <button
+                            onClick={() => handleCancelVisaRequest(latestVisaApplication.id)}
+                            className="ml-3 px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all"
+                          >
+                            Cancel Request
+                          </button>
+                        )}
+                        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-[10px] font-bold text-slate-500">
+                          <div className="bg-slate-50 dark:bg-slate-900/60 rounded-2xl px-4 py-3">
+                            <span className="block text-[9px] font-black uppercase tracking-[0.18em] text-slate-400 mb-1">Travel Date</span>
+                            <span className="text-slate-900 dark:text-white">{latestVisaApplication.travel_date || 'Pending update'}</span>
+                          </div>
+                          <div className="bg-slate-50 dark:bg-slate-900/60 rounded-2xl px-4 py-3">
+                            <span className="block text-[9px] font-black uppercase tracking-[0.18em] text-slate-400 mb-1">Purpose</span>
+                            <span className="text-slate-900 dark:text-white">{latestVisaApplication.purpose || 'Tourist'}</span>
+                          </div>
+                          <div className="bg-slate-50 dark:bg-slate-900/60 rounded-2xl px-4 py-3">
+                            <span className="block text-[9px] font-black uppercase tracking-[0.18em] text-slate-400 mb-1">Application ID</span>
+                            <span className="text-slate-900 dark:text-white break-all">{latestVisaApplication.id}</span>
+                          </div>
+                          <div className="bg-slate-50 dark:bg-slate-900/60 rounded-2xl px-4 py-3">
+                            <span className="block text-[9px] font-black uppercase tracking-[0.18em] text-slate-400 mb-1">Submitted</span>
+                            <span className="text-slate-900 dark:text-white">{new Date(latestVisaApplication.created_at).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-sm font-bold text-slate-500">Your submitted visa requests will appear here with their current review status.</p>
+                    )}
+                  </div>
+
+                  <div className="glass p-8 rounded-[3rem] border border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Travel Policies</p>
+                        <h4 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mt-2">
+                          {activePolicies.length > 0 ? `${activePolicies.length} active polic${activePolicies.length > 1 ? 'ies' : 'y'}` : 'No active policies yet'}
+                        </h4>
+                      </div>
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 flex items-center justify-center">
+                        <i className="fa-solid fa-shield-halved text-xl"></i>
+                      </div>
+                    </div>
+
+                    {activePolicies.length > 0 ? (
+                      <div className="space-y-4">
+                        {activePolicies.slice(0, 3).map((policy) => (
+                          <div key={policy.id} className="bg-slate-50 dark:bg-slate-900/60 rounded-[2rem] p-5 border border-slate-100 dark:border-slate-800">
+                            <div className="flex items-start justify-between gap-4">
+                              <div>
+                                <h5 className="text-base font-black text-slate-900 dark:text-white">{policy.plan_name}</h5>
+                                <p className="mt-1 text-xs font-bold text-slate-500 dark:text-slate-400">
+                                  {policy.destination} • {policy.trip_days} day{policy.trip_days > 1 ? 's' : ''} • {policy.travelers} traveler{policy.travelers > 1 ? 's' : ''}
+                                </p>
+                              </div>
+                              <div className="flex flex-col items-end gap-2">
+                                <div className="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-emerald-200 dark:border-emerald-800">
+                                  {policy.status || 'issued'}
+                                </div>
+                                {policy.status !== 'cancelled' && (
+                                  <button
+                                    onClick={() => handleCancelPolicy(policy.id)}
+                                    className="px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all"
+                                  >
+                                    Cancel Policy
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            <div className="mt-4 flex flex-wrap gap-4 text-[10px] font-bold text-slate-500">
+                              <span>Premium: {convertPrice(policy.premium || 0)}</span>
+                              <span>Coverage: {policy.start_date} to {policy.end_date}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm font-bold text-slate-500">Issued insurance policies will appear here once a plan is generated.</p>
+                    )}
+                  </div>
                 </div>
               </section>
             )}

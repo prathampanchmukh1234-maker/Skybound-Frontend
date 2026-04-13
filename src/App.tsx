@@ -35,6 +35,7 @@ import Activities from './pages/Activities';
 import GiftCards from './pages/GiftCards';
 import GiftCardRedeem from './pages/GiftCardRedeem';
 import Visa from './pages/Visa';
+import VisaSuccess from './pages/VisaSuccess';
 import Insurance from './pages/Insurance';
 import Flights from './pages/Flights';
 import Wallet from './pages/Wallet';
@@ -46,6 +47,8 @@ import Settings from './pages/Settings';
 import Offers from './pages/Offers';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentFailed from './pages/PaymentFailed';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
 import NotFound from './pages/NotFound';
 
 const ScrollToTop = () => {
@@ -159,6 +162,7 @@ const AppContent: React.FC = () => {
               <Route path="/gift-cards/redeem" element={<GiftCardRedeem />} />
               <Route path="/flights" element={<Flights />} />
               <Route path="/visa" element={<Visa />} />
+              <Route path="/visa/success" element={<VisaSuccess />} />
               <Route path="/insurance" element={<Insurance />} />
               <Route path="/wallet" element={<Wallet />} />
               <Route path="/refer" element={<ReferEarn />} />
@@ -167,6 +171,8 @@ const AppContent: React.FC = () => {
               <Route path="/profile" element={<Profile />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/offers" element={<Offers />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<TermsOfService />} />
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/support" element={<Support />} />
               <Route path="/group-planner" element={<GroupPlanner />} />
