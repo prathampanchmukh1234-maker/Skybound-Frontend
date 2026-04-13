@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Mail, Phone, MapPin, ShieldCheck, Camera, ChevronLeft, Save, Globe, Briefcase, Calendar, Ticket } from 'lucide-react';
+import { User, Mail, Phone, MapPin, ShieldCheck, Camera, ChevronLeft, Save, Globe, Briefcase, Calendar, Ticket, Trash2 } from 'lucide-react';
 import { useGlobal } from '../context/GlobalContext';
 import { getStoredBookings } from '../services/db';
 import { supabase } from '../services/supabase';
@@ -15,12 +15,23 @@ const Profile: React.FC = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
   const [formData, setFormData] = useState({
-    name: user?.name || 'Pratham Panchmukh',
-    email: user?.email || 'prathampanchmukh1234@gmail.com',
-    phone: user?.phone || '+91 98765 43210',
-    location: user?.location || 'Pune, India',
-    bio: user?.bio || 'Avid traveler and tech enthusiast. Always looking for the next adventure.'
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    location: user?.location || '',
+    bio: user?.bio || ''
   });
+
+  useEffect(() => {
+    if (!user) return;
+    setFormData({
+      name: user.name || '',
+      email: user.email || '',
+      phone: user.phone || '',
+      location: user.location || '',
+      bio: user.bio || ''
+    });
+  }, [user]);
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -43,7 +54,36 @@ const Profile: React.FC = () => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoDeleting, setPhotoDeleting] = useState(false);
   const [photoError, setPhotoError] = useState('');
+
+  const parseAvatarStorageRef = (avatarRef: string, defaultBucket: string): { bucket: string; path: string } | null => {
+    if (!avatarRef) return null;
+
+    if (avatarRef.startsWith('http')) {
+      // Handles public/signed URL formats:
+      // .../object/public/<bucket>/<path>
+      // .../object/sign/<bucket>/<path>?token=...
+      // .../s3/object/public/<bucket>/<path>
+      const cleanUrl = avatarRef.split('?')[0];
+      const signMatch = cleanUrl.match(/\/object\/sign\/([^/]+)\/(.+)$/);
+      if (signMatch) return { bucket: signMatch[1], path: signMatch[2] };
+      const publicMatch = cleanUrl.match(/\/object\/public\/([^/]+)\/(.+)$/);
+      if (publicMatch) return { bucket: publicMatch[1], path: publicMatch[2] };
+      return null;
+    }
+
+    if (avatarRef.startsWith(`${defaultBucket}/`)) {
+      return { bucket: defaultBucket, path: avatarRef.slice(defaultBucket.length + 1) };
+    }
+
+    const [first, ...rest] = avatarRef.split('/');
+    if (rest.length > 0) {
+      return { bucket: first, path: rest.join('/') };
+    }
+
+    return { bucket: defaultBucket, path: avatarRef };
+  };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -63,23 +103,22 @@ const Profile: React.FC = () => {
     setPhotoError('');
 
     try {
-      // Attempt to create bucket if it doesn't exist (fails silently if exists)
-      await supabase.storage.createBucket('avatars', { public: true });
-      
-      const path = `${user.id}/avatar_${Date.now()}.jpg`;
-      const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
+      const bucket = import.meta.env.VITE_SUPABASE_AVATAR_BUCKET || 'avatars';
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const path = `${user.id}/avatar_${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
       
       if (uploadError) {
-        if (uploadError.message.includes('bucket not found')) {
-          setPhotoError('Storage bucket "avatars" not found. Please create it in Supabase Dashboard.');
+        if (uploadError.message.toLowerCase().includes('bucket')) {
+          setPhotoError(`Avatar upload failed: bucket "${bucket}" was not found or is not accessible.`);
         } else {
           setPhotoError(uploadError.message);
         }
         return;
       }
 
-      const { data } = supabase.storage.from('avatars').getPublicUrl(path);
-      await updateUser({ avatar_url: data.publicUrl } as any);
+      // Store storage reference; GlobalContext resolves this to a display URL.
+      await updateUser({ avatar_url: `${bucket}/${path}` } as any);
     } catch (err: any) {
       setPhotoError(err.message || 'Upload failed');
     } finally {
@@ -91,7 +130,6 @@ const Profile: React.FC = () => {
     try {
       await updateUser({
         name: formData.name,
-        email: formData.email,
         phone: formData.phone,
         location: formData.location,
         bio: formData.bio
@@ -99,6 +137,45 @@ const Profile: React.FC = () => {
       setIsEditing(false);
     } catch (error) {
       console.error("Failed to update profile:", error);
+    }
+  };
+
+  const handleDeletePhoto = async () => {
+    if (!user) return;
+
+    setPhotoDeleting(true);
+    setPhotoError('');
+
+    try {
+      const defaultBucket = import.meta.env.VITE_SUPABASE_AVATAR_BUCKET || 'avatars';
+      let avatarRef = user.avatar_url || '';
+
+      // Prefer the raw value from DB (usually bucket/path).
+      const { data: profileRow } = await supabase
+        .from('users')
+        .select('avatar_url')
+        .eq('id', user.id)
+        .single();
+
+      if (profileRow?.avatar_url) {
+        avatarRef = profileRow.avatar_url;
+      }
+
+      const parsed = parseAvatarStorageRef(avatarRef, defaultBucket);
+      if (parsed?.path) {
+        const { error: removeError } = await supabase.storage.from(parsed.bucket).remove([parsed.path]);
+        if (removeError && !removeError.message.toLowerCase().includes('not found')) {
+          setPhotoError(removeError.message);
+          return;
+        }
+      }
+
+      await updateUser({ avatar_url: null as any } as any);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    } catch (err: any) {
+      setPhotoError(err.message || 'Failed to delete photo');
+    } finally {
+      setPhotoDeleting(false);
     }
   };
 
@@ -137,7 +214,7 @@ const Profile: React.FC = () => {
                 />
                 <button 
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={photoUploading}
+                  disabled={photoUploading || photoDeleting}
                   className="absolute bottom-2 right-2 w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform disabled:opacity-50"
                 >
                   {photoUploading ? (
@@ -146,6 +223,20 @@ const Profile: React.FC = () => {
                     <Camera className="w-5 h-5" />
                   )}
                 </button>
+                {user?.avatar_url && (
+                  <button
+                    onClick={handleDeletePhoto}
+                    disabled={photoDeleting || photoUploading}
+                    className="absolute bottom-2 left-2 w-10 h-10 bg-rose-600 text-white rounded-xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform disabled:opacity-50"
+                    title="Remove profile photo"
+                  >
+                    {photoDeleting ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <Trash2 className="w-5 h-5" />
+                    )}
+                  </button>
+                )}
               </div>
               {photoError && <p className="text-red-500 text-[10px] font-black uppercase tracking-widest mt-2 ml-4">{photoError}</p>}
             </div>
@@ -158,7 +249,17 @@ const Profile: React.FC = () => {
                 <div className="flex items-center gap-4 text-slate-400">
                   <div className="flex items-center gap-1">
                     <MapPin className="w-3 h-3" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">{formData.location}</span>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={formData.location}
+                        onChange={e => setFormData({ ...formData, location: e.target.value })}
+                        className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-200 outline-none border-b border-slate-300 dark:border-slate-600"
+                        placeholder="Add location"
+                      />
+                    ) : (
+                      <span className="text-[10px] font-black uppercase tracking-widest">{formData.location || 'Add location'}</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-1">
                     <ShieldCheck className="w-3 h-3 text-indigo-600" />
@@ -181,19 +282,26 @@ const Profile: React.FC = () => {
                   <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Personal Details</h4>
                   <div className="space-y-4">
                     <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                      <Mail className="w-5 h-5 text-indigo-600" />
+                      <User className="w-5 h-5 text-indigo-600" />
                       <div className="flex-1">
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Email Address</span>
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Full Name</span>
                         {isEditing ? (
-                          <input 
-                            type="email" 
-                            value={formData.email} 
-                            onChange={e => setFormData({...formData, email: e.target.value})}
+                          <input
+                            type="text"
+                            value={formData.name}
+                            onChange={e => setFormData({ ...formData, name: e.target.value })}
                             className="w-full bg-transparent font-bold text-slate-900 dark:text-white outline-none"
                           />
                         ) : (
-                          <span className="font-bold text-slate-900 dark:text-white">{formData.email}</span>
+                          <span className="font-bold text-slate-900 dark:text-white">{formData.name || 'N/A'}</span>
                         )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                      <Mail className="w-5 h-5 text-indigo-600" />
+                      <div className="flex-1">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Email Address</span>
+                        <span className="font-bold text-slate-900 dark:text-white">{formData.email || 'N/A'}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
@@ -209,6 +317,22 @@ const Profile: React.FC = () => {
                           />
                         ) : (
                           <span className="font-bold text-slate-900 dark:text-white">{formData.phone}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                      <MapPin className="w-5 h-5 text-indigo-600" />
+                      <div className="flex-1">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Location</span>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={formData.location}
+                            onChange={e => setFormData({ ...formData, location: e.target.value })}
+                            className="w-full bg-transparent font-bold text-slate-900 dark:text-white outline-none"
+                          />
+                        ) : (
+                          <span className="font-bold text-slate-900 dark:text-white">{formData.location || 'N/A'}</span>
                         )}
                       </div>
                     </div>
@@ -259,7 +383,7 @@ const Profile: React.FC = () => {
                       </div>
                       <div className="space-y-1 mb-8">
                         <span className="text-xs font-bold text-white/60 block">Current Balance</span>
-                        <span className="text-3xl font-black tracking-tighter">{convertPrice(user?.wallet_balance || 0)}</span>
+                        <span className="text-3xl font-black tracking-tighter">{convertPrice(user?.walletBalance || 0)}</span>
                       </div>
                       <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest">
                         <span>Points: {user?.skyPoints || 0}</span>

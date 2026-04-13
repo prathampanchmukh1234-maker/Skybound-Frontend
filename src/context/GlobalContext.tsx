@@ -57,6 +57,56 @@ export const GlobalProvider: React.FC<{children: React.ReactNode}> = ({ children
     });
   }, [user]);
 
+  const resolveAvatarUrl = useCallback(async (avatarRef?: string | null) => {
+    if (!avatarRef || !isSupabaseConfigured()) return undefined;
+
+    const defaultBucket = import.meta.env.VITE_SUPABASE_AVATAR_BUCKET || 'avatars';
+    let bucket = defaultBucket;
+    let path = '';
+
+    if (avatarRef.startsWith('http')) {
+      // Handles URLs like:
+      // .../storage/v1/object/public/<bucket>/<path>
+      // .../storage/v1/s3/object/public/<bucket>/<path>
+      const match = avatarRef.match(/\/object\/public\/([^/]+)\/(.+)$/);
+      if (match) {
+        bucket = match[1];
+        path = match[2];
+      } else {
+        return avatarRef;
+      }
+    } else if (avatarRef.includes('/')) {
+      // Supports "avatars/user_id/file.jpg" or "user_id/file.jpg"
+      if (avatarRef.startsWith(`${defaultBucket}/`)) {
+        path = avatarRef.slice(defaultBucket.length + 1);
+      } else {
+        const [first, ...rest] = avatarRef.split('/');
+        if (rest.length > 0 && first) {
+          bucket = first;
+          path = rest.join('/');
+        } else {
+          path = avatarRef;
+        }
+      }
+    } else {
+      path = avatarRef;
+    }
+
+    if (!path) return undefined;
+
+    // Signed URL works for both private and public buckets.
+    const { data: signedData, error: signedError } = await supabase.storage
+      .from(bucket)
+      .createSignedUrl(path, 60 * 60 * 24);
+
+    if (!signedError && signedData?.signedUrl) {
+      return signedData.signedUrl;
+    }
+
+    const { data: publicData } = supabase.storage.from(bucket).getPublicUrl(path);
+    return publicData?.publicUrl || avatarRef;
+  }, []);
+
   const refreshUser = useCallback(async (session?: any) => {
     setLoadingAuth(true);
     
@@ -99,6 +149,8 @@ export const GlobalProvider: React.FC<{children: React.ReactNode}> = ({ children
            console.error("Profile fetch error:", error);
         }
         
+        const resolvedAvatarUrl = await resolveAvatarUrl(data?.avatar_url);
+
         const userData: User = {
           id: data?.id || currentSession.user.id,
           name: data?.name || currentSession.user.user_metadata?.full_name || 'SykBound Member',
@@ -110,7 +162,7 @@ export const GlobalProvider: React.FC<{children: React.ReactNode}> = ({ children
           freeTrialUsed: data?.free_trial_used || false,
           referralCode: data?.referral_code || `SKYBOUND${currentSession.user.id.slice(0,6).toUpperCase()}`,
           searchHistory: data?.search_history || [],
-          avatar_url: data?.avatar_url,
+          avatar_url: resolvedAvatarUrl,
           phone: data?.phone,
           twoFaEnabled: data?.two_fa_enabled || false,
           location: data?.location,
@@ -162,7 +214,7 @@ export const GlobalProvider: React.FC<{children: React.ReactNode}> = ({ children
       setLoadingAuth(false);
       setIsInitialized(true);
     }
-  }, []);
+  }, [resolveAvatarUrl]);
 
   const addToWishlist = useCallback((id: string) => {
     if (!user) return;
@@ -343,7 +395,7 @@ export const GlobalProvider: React.FC<{children: React.ReactNode}> = ({ children
     <GlobalContext.Provider value={{ 
       theme, toggleTheme, currency, setCurrency, location, convertPrice, 
       user, loadingAuth, isSyncing: loadingAuth, isInitialized, searchHistory, wishlist, notifications,
-      refreshUser, updateHistory, upgradeTier, logout, useFreeTrial,
+      refreshUser, updateUser, updateHistory, upgradeTier, logout, useFreeTrial,
       addToWishlist, removeFromWishlist, addNotification, markNotificationRead, updateWalletBalance
     }}>
       {children}
