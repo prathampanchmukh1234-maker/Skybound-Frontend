@@ -167,7 +167,7 @@ const SearchForm: React.FC = () => {
               onClick={() => setIsMultiCity(true)}
               className={`text-[10px] font-black uppercase tracking-widest transition-colors ${isMultiCity ? 'text-indigo-600 border-b-2 border-indigo-600 pb-1' : 'text-slate-400 hover:text-slate-600'}`}
             >
-              Multi-City
+              
             </button>
           </div>
           <div className="flex items-center gap-3 lg:ml-auto">

@@ -173,8 +173,8 @@ const getUnsplashUrl = (id: string, w = 1200) => `https://images.unsplash.com/ph
 const FLIGHT_IMAGE_BY_AIRLINE: Record<string, string> = {
   'IndiGo': 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&q=85&w=1200',
   'Air India': 'https://images.unsplash.com/photo-1517479149777-5f3b1511d5ad?auto=format&fit=crop&q=85&w=1200',
-  'Vistara': 'https://images.unsplash.com/photo-1544015759-91f688bdd81b?auto=format&fit=crop&q=85&w=1200',
-  'SpiceJet': 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?auto=format&fit=crop&q=85&w=1200'
+  'Vistara': 'https://images.unsplash.com/photo-1521727857535-28d2047314ac?auto=format&fit=crop&q=85&w=1200',
+  'SpiceJet': 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&q=85&w=1200'
 };
 
 const TRAIN_IMAGE_BY_NAME: Record<string, string> = {
@@ -194,6 +194,13 @@ const BUS_IMAGE_BY_OPERATOR: Record<string, string> = {
 const getFlightVisual = (airline: string, fallbackId: string) => FLIGHT_IMAGE_BY_AIRLINE[airline] || getUnsplashUrl(fallbackId);
 const getTrainVisual = (name: string, fallbackId: string) => TRAIN_IMAGE_BY_NAME[name] || getUnsplashUrl(fallbackId);
 const getBusVisual = (operator: string, fallbackId: string) => BUS_IMAGE_BY_OPERATOR[operator] || getUnsplashUrl(fallbackId);
+
+type TripType = 'one-way' | 'round-trip' | 'multi-city';
+interface FlightSegmentQuery {
+  from: string;
+  to: string;
+  date: string;
+}
 
 const formatServiceDate = (date: string, type: string) => {
   if (!date) return '';
@@ -430,8 +437,33 @@ const SearchResults: React.FC = () => {
   const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
   
   const type = (searchParams.get('type') || 'flight') as any;
+  const tripType = (searchParams.get('tripType') || 'one-way') as TripType;
   const toCity = searchParams.get('to') || 'Mumbai';
   const fromCity = searchParams.get('from') || 'Delhi';
+  const multiCitySegments = useMemo<FlightSegmentQuery[]>(() => {
+    if (tripType !== 'multi-city' || type !== 'flight') return [];
+
+    const segmentsRaw = searchParams.get('segments');
+    if (!segmentsRaw) return [];
+
+    try {
+      const parsed = JSON.parse(segmentsRaw);
+      if (!Array.isArray(parsed)) return [];
+
+      return parsed
+        .filter((segment) => segment && typeof segment.from === 'string' && typeof segment.to === 'string')
+        .map((segment) => ({
+          from: segment.from.trim(),
+          to: segment.to.trim(),
+          date: typeof segment.date === 'string' ? segment.date : ''
+        }))
+        .filter((segment) => segment.from && segment.to);
+    } catch {
+      return [];
+    }
+  }, [searchParams, tripType, type]);
+  const itineraryFrom = multiCitySegments[0]?.from || fromCity;
+  const itineraryTo = multiCitySegments[multiCitySegments.length - 1]?.to || toCity;
   
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -460,7 +492,7 @@ const SearchResults: React.FC = () => {
 
   useEffect(() => {
     setLoading(true);
-    updateHistory({ type, from: fromCity, to: toCity });
+    updateHistory({ type, from: itineraryFrom, to: itineraryTo });
 
     const timer = setTimeout(() => {
       let mockData: any[] = [];
@@ -487,32 +519,71 @@ const SearchResults: React.FC = () => {
       };
 
       if (type === 'flight') {
-        const cityFlights = FLIGHTS.filter(f => 
-          f.from.toLowerCase().includes(fromCity.toLowerCase()) && 
-          f.to.toLowerCase().includes(toCity.toLowerCase())
-        );
-        const sourceData = cityFlights.length > 0 ? cityFlights : FLIGHTS;
+        if (tripType === 'multi-city' && multiCitySegments.length > 0) {
+          mockData = multiCitySegments.flatMap((segment, segmentIndex) => {
+            const cityFlights = FLIGHTS.filter((flight) =>
+              flight.from.toLowerCase().includes(segment.from.toLowerCase()) &&
+              flight.to.toLowerCase().includes(segment.to.toLowerCase())
+            );
+            const seedFlights = cityFlights.length > 0
+              ? cityFlights
+              : FLIGHTS.slice(0, 3).map((flight) => ({ ...flight, from: segment.from, to: segment.to }));
 
-        mockData = sourceData.map((flight, i) => {
-          const airlineObj = AIRLINES.find(a => a.name === flight.airline) || AIRLINES[0];
-          return {
-            id: flight.id, 
-            airline: flight.airline, 
-            logo: airlineObj.logo,
-            image: getFlightVisual(flight.airline, pool[i % pool.length]),
-            from: flight.from, to: flight.to, 
-            departureTime: flight.departure,
-            arrivalTime: flight.arrival,
-            duration: flight.duration,
-            price: flight.price,
-            matchScore: 95 - i, 
-            type: 'flight',
-            stops: i % 3 === 0 ? 'Non-stop' : '1 Stop',
-            rating: flight.rating,
-            policy: getPolicyForProvider('flight', flight.airline),
-            amenities: i % 2 === 0 ? ['Priority Boarding', 'Extra Legroom', 'USB Port', 'WiFi'] : ['Meal Included', 'Beverages', 'Standard Wi-Fi', 'Entertainment']
-          };
-        });
+            return seedFlights.map((flight, i) => {
+              const airlineObj = AIRLINES.find((airline) => airline.name === flight.airline) || AIRLINES[0];
+              const absoluteIndex = segmentIndex * 3 + i;
+              return {
+                id: `${flight.id}-seg-${segmentIndex}-${i}`,
+                airline: flight.airline,
+                logo: airlineObj.logo,
+                image: getFlightVisual(flight.airline, pool[absoluteIndex % pool.length]),
+                from: segment.from,
+                to: segment.to,
+                departureTime: flight.departure,
+                arrivalTime: flight.arrival,
+                duration: flight.duration,
+                price: flight.price + segmentIndex * 450,
+                matchScore: Math.max(78, 95 - absoluteIndex),
+                type: 'flight',
+                stops: absoluteIndex % 3 === 0 ? 'Non-stop' : '1 Stop',
+                rating: flight.rating,
+                segmentLabel: `Leg ${segmentIndex + 1}`,
+                segmentDate: segment.date || departureDateParam,
+                policy: getPolicyForProvider('flight', flight.airline),
+                amenities: absoluteIndex % 2 === 0
+                  ? ['Priority Boarding', 'Extra Legroom', 'USB Port', 'WiFi']
+                  : ['Meal Included', 'Beverages', 'Standard Wi-Fi', 'Entertainment']
+              };
+            });
+          });
+        } else {
+          const cityFlights = FLIGHTS.filter(f =>
+            f.from.toLowerCase().includes(fromCity.toLowerCase()) &&
+            f.to.toLowerCase().includes(toCity.toLowerCase())
+          );
+          const sourceData = cityFlights.length > 0 ? cityFlights : FLIGHTS;
+
+          mockData = sourceData.map((flight, i) => {
+            const airlineObj = AIRLINES.find(a => a.name === flight.airline) || AIRLINES[0];
+            return {
+              id: flight.id,
+              airline: flight.airline,
+              logo: airlineObj.logo,
+              image: getFlightVisual(flight.airline, pool[i % pool.length]),
+              from: flight.from, to: flight.to,
+              departureTime: flight.departure,
+              arrivalTime: flight.arrival,
+              duration: flight.duration,
+              price: flight.price,
+              matchScore: 95 - i,
+              type: 'flight',
+              stops: i % 3 === 0 ? 'Non-stop' : '1 Stop',
+              rating: flight.rating,
+              policy: getPolicyForProvider('flight', flight.airline),
+              amenities: i % 2 === 0 ? ['Priority Boarding', 'Extra Legroom', 'USB Port', 'WiFi'] : ['Meal Included', 'Beverages', 'Standard Wi-Fi', 'Entertainment']
+            };
+          });
+        }
       } else if (type === 'hotel') {
         const cityHotels = HOTELS_DATA.filter(h => h.location.toLowerCase().includes(toCity.toLowerCase()));
         const sourceData = cityHotels.length > 0 ? cityHotels : HOTELS_DATA;
@@ -649,7 +720,7 @@ const SearchResults: React.FC = () => {
     }, 800);
 
     return () => clearTimeout(timer);
-  }, [toCity, type, fromCity, updateHistory, departureDateParam]);
+  }, [toCity, type, fromCity, updateHistory, departureDateParam, itineraryFrom, itineraryTo, tripType, multiCitySegments]);
 
   const filteredResults = useMemo(() => {
     let list = [...results];
@@ -788,8 +859,8 @@ const SearchResults: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-8 border-b border-slate-200 dark:border-slate-800 pb-12">
           <div className="flex flex-col gap-2">
             <h1 className="text-7xl font-black text-slate-900 dark:text-white tracking-tighter leading-[0.9] capitalize">
-              {type}s to<br />
-              <span className="text-indigo-600">{toCity}</span>
+              {type === 'flight' && tripType === 'multi-city' ? 'Multi-city flights' : `${type}s to`}<br />
+              <span className="text-indigo-600">{type === 'flight' && tripType === 'multi-city' ? `${itineraryFrom} - ${itineraryTo}` : toCity}</span>
             </h1>
             <div className="flex items-center gap-4 mt-6">
               <div className="h-[1px] w-12 bg-indigo-600"></div>
@@ -841,7 +912,7 @@ const SearchResults: React.FC = () => {
                         <div className="font-black text-slate-900 dark:text-white text-xl leading-tight truncate font-display" title={item.airline || item.title}>
                           {item.airline || item.title}
                         </div>
-                        <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mt-1 block">{type}</span>
+                        <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mt-1 block">{item.segmentLabel || type}</span>
                       </div>
                     </div>
                     
@@ -849,7 +920,7 @@ const SearchResults: React.FC = () => {
                       <div className="flex-1 flex items-center justify-between w-full px-6 md:px-10 border-y md:border-y-0 md:border-x border-slate-100 dark:border-slate-800 py-6 md:py-0">
                         <div className="text-center min-w-[80px]">
                           <div className="text-3xl font-black font-display text-slate-900 dark:text-white">{item.departureTime}</div>
-                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{fromCity}</div>
+                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{item.from || fromCity}</div>
                         </div>
                         <div className="flex-1 px-6 text-center">
                           <div className="h-[2px] bg-slate-100 dark:bg-slate-800 w-full relative">
@@ -859,7 +930,7 @@ const SearchResults: React.FC = () => {
                         </div>
                         <div className="text-center min-w-[80px]">
                           <div className="text-3xl font-black font-display text-slate-900 dark:text-white">{item.arrivalTime}</div>
-                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{toCity}</div>
+                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{item.to || toCity}</div>
                         </div>
                       </div>
                     ) : (
@@ -874,10 +945,10 @@ const SearchResults: React.FC = () => {
                     )}
                     
                     <div className="w-full md:w-44 shrink-0 text-right">
-                      {formattedServiceDate && (
+                      {(item.segmentDate ? formatServiceDate(item.segmentDate, type) : formattedServiceDate) && (
                         <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-indigo-50 dark:bg-indigo-900/20 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-indigo-600">
                           <i className="fa-solid fa-calendar-days"></i>
-                          <span>{formattedServiceDate}</span>
+                          <span>{item.segmentDate ? formatServiceDate(item.segmentDate, type) : formattedServiceDate}</span>
                         </div>
                       )}
                       <div className="text-4xl font-black text-slate-900 dark:text-white font-display tracking-tighter">{convertPrice(item.price)}</div>
@@ -903,8 +974,8 @@ const SearchResults: React.FC = () => {
                       <div className="min-w-0">
                         <div className="text-[10px] font-black uppercase text-indigo-600 mb-2 tracking-widest">Live Inventory</div>
                         <p className="text-sm font-bold text-slate-500 truncate">{item.amenities?.slice(0, 3).join(' • ') || 'Premium Service'}</p>
-                        {formattedServiceDate && (
-                          <p className="mt-2 text-[10px] font-black uppercase tracking-widest text-slate-400">{formattedServiceDate}</p>
+                        {(item.segmentDate ? formatServiceDate(item.segmentDate, type) : formattedServiceDate) && (
+                          <p className="mt-2 text-[10px] font-black uppercase tracking-widest text-slate-400">{item.segmentDate ? formatServiceDate(item.segmentDate, type) : formattedServiceDate}</p>
                         )}
                       </div>
                     </div>
