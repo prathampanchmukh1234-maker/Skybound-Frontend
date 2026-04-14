@@ -67,11 +67,14 @@ export const createBookingRecord = async (data: any) => {
       total_price: data.totalPrice,
       status: "confirmed",
       payment_id: data.paymentId || null,
+      movie_id: data.movieId,
+      showtime_id: data.showtimeId,
       venue: data.venue,
       travel_date: data.travel_date,
       show_time: data.show_time,
       from_city: data.from_city,
       to_city: data.to_city,
+      screen_number: data.screen_number || data.details?.screen || null,
       created_at: new Date().toISOString()
     };
     const saved = JSON.parse(localStorage.getItem(`sb_bookings_${data.userId}`) || '[]');
@@ -103,9 +106,12 @@ export const createBookingRecord = async (data: any) => {
     user_id: data.userId,
     type: data.type,
     item_id: data.itemId,
+    movie_id: data.movieId || null,
+    showtime_id: data.showtimeId || null,
     title: data.title,
     poster: data.poster,
     seat: data.seat,
+    details: data.details || null,
     total_price: data.totalPrice,
     status: "confirmed",
     payment_id: data.paymentId || 'demo',
@@ -114,6 +120,7 @@ export const createBookingRecord = async (data: any) => {
     show_time: data.show_time,
     from_city: data.from_city || data.from || null,
     to_city: data.to_city || data.to || null,
+    screen_number: data.screen_number || data.details?.screen || null,
     created_at: new Date().toISOString()
   }]).select().single();
 

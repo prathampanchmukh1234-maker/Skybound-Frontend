@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Train, Search, MapPin, Calendar, Clock, ShieldCheck, ChevronRight, ChevronLeft, Info, X, CheckCircle2, AlertCircle, Activity, Map as MapIcon, Navigation } from 'lucide-react';
-import { TRAIN_ROUTES } from '../constants';
+import { LOCATIONS, TRAIN_ROUTES } from '../constants';
+import Toast from '../components/Toast';
 
 const Trains: React.FC = () => {
   const navigate = useNavigate();
@@ -17,23 +18,75 @@ const Trains: React.FC = () => {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [statusType, setStatusType] = useState<'pnr' | 'live'>('pnr');
   const [isLoading, setIsLoading] = useState(false);
-
   const [isSearching, setIsSearching] = useState(false);
+  const [hasSearchedRoutes, setHasSearchedRoutes] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [activeInput, setActiveInput] = useState<'from' | 'to' | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setActiveInput(null);
+        setSuggestions([]);
+      }
+    };
+
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const getStationSuggestions = (value: string) => {
+    const normalizedValue = value.trim().toLowerCase();
+    return LOCATIONS.filter((location) => {
+      const matchesSearch =
+        !normalizedValue ||
+        location.name.toLowerCase().includes(normalizedValue) ||
+        location.country.toLowerCase().includes(normalizedValue) ||
+        location.code?.toLowerCase().includes(normalizedValue);
+
+      return matchesSearch && location.region === 'domestic';
+    }).slice(0, 8);
+  };
+
+  const openSuggestions = (field: 'from' | 'to', value: string) => {
+    setActiveInput(field);
+    setSuggestions(getStationSuggestions(value));
+  };
+
+  const selectSuggestion = (field: 'from' | 'to', value: string) => {
+    setFormData((previous) => ({ ...previous, [field]: value }));
+    setActiveInput(null);
+    setSuggestions([]);
+  };
+
+  const filteredRoutes = useMemo(() => {
+    const from = formData.from.trim().toLowerCase();
+    const to = formData.to.trim().toLowerCase();
+
+    return TRAIN_ROUTES.filter((train) => {
+      const matchesFrom = !from || train.from.toLowerCase().includes(from);
+      const matchesTo = !to || train.to.toLowerCase().includes(to);
+      return matchesFrom && matchesTo;
+    });
+  }, [formData.from, formData.to]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.to.trim()) {
+      setToast({ message: 'Enter a destination station to view trains.', type: 'error' });
+      return;
+    }
     setIsSearching(true);
-    const queryParams = new URLSearchParams({
-      type: 'train',
-      from: formData.from || 'Pune',
-      to: formData.to || 'Mumbai',
-      departure: formData.date
-    }).toString();
-    
+
     setTimeout(() => {
-      navigate(`/search?${queryParams}`);
+      setHasSearchedRoutes(true);
       setIsSearching(false);
-    }, 1500);
+      if (filteredRoutes.length === 0) {
+        setToast({ message: 'No matching IRCTC routes found for this destination.', type: 'info' });
+      }
+    }, 600);
   };
 
   const handleCheckStatus = (type: 'pnr' | 'live') => {
@@ -61,8 +114,8 @@ const Trains: React.FC = () => {
           poster: train.image,
           price: train.classes[classType as keyof typeof train.classes].fare,
           class: classType,
-          from: 'Pune Jn',
-          to: 'Mumbai CSMT',
+          from: train.from,
+          to: train.to,
           venue: `${train.from} → ${train.to}`,
           from_city: train.from,
           to_city: train.to,
@@ -115,12 +168,12 @@ const Trains: React.FC = () => {
         </div>
 
         {/* Train Search Tabs */}
-        <div className="bg-white dark:bg-slate-900 p-10 rounded-[2.5rem] shadow-xl border border-slate-100 dark:border-slate-800 mb-20 relative overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 p-10 rounded-[2.5rem] shadow-xl border border-slate-100 dark:border-slate-800 mb-20 relative overflow-visible z-20">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-indigo-600"></div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8" ref={dropdownRef}>
             {activeTab === 'book' ? (
               <form onSubmit={handleSearch} className="md:col-span-4 grid grid-cols-1 md:grid-cols-4 gap-8">
-                <div className="space-y-3">
+                <div className="space-y-3 relative">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">From Station</label>
                   <div className="relative group">
                     <MapPin className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-600 group-focus-within:scale-110 transition-transform" />
@@ -128,12 +181,40 @@ const Trains: React.FC = () => {
                       type="text" 
                       placeholder="Pune Jn (PUNE)" 
                       value={formData.from}
-                      onChange={(e) => setFormData({...formData, from: e.target.value})}
+                      onChange={(e) => {
+                        const nextValue = e.target.value;
+                        setFormData({...formData, from: nextValue});
+                        openSuggestions('from', nextValue);
+                      }}
+                      onFocus={() => openSuggestions('from', formData.from)}
                       className="w-full pl-14 pr-6 py-5 bg-slate-50 dark:bg-slate-800 rounded-2xl font-bold outline-none border border-transparent focus:border-indigo-600 focus:bg-white dark:focus:bg-slate-900 transition-all shadow-sm" 
                     />
                   </div>
+                  {activeInput === 'from' && suggestions.length > 0 && (
+                    <div className="absolute top-[calc(100%+12px)] left-0 right-0 z-[220] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden max-h-[320px] overflow-y-auto">
+                      {suggestions.map((location) => (
+                        <button
+                          key={`${location.id}-from`}
+                          type="button"
+                          onClick={() => selectSuggestion('from', location.name)}
+                          className="w-full flex items-center gap-4 px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left"
+                        >
+                          <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600">
+                            <MapPin className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <span className="font-black text-slate-900 dark:text-white">{location.name}</span>
+                              {location.code && <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-0.5 rounded-md">{location.code}</span>}
+                            </div>
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{location.country}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-3 relative">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">To Station</label>
                   <div className="relative group">
                     <MapPin className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-600 group-focus-within:scale-110 transition-transform" />
@@ -141,10 +222,38 @@ const Trains: React.FC = () => {
                       type="text" 
                       placeholder="Mumbai CSMT (CSMT)" 
                       value={formData.to}
-                      onChange={(e) => setFormData({...formData, to: e.target.value})}
+                      onChange={(e) => {
+                        const nextValue = e.target.value;
+                        setFormData({...formData, to: nextValue});
+                        openSuggestions('to', nextValue);
+                      }}
+                      onFocus={() => openSuggestions('to', formData.to)}
                       className="w-full pl-14 pr-6 py-5 bg-slate-50 dark:bg-slate-800 rounded-2xl font-bold outline-none border border-transparent focus:border-indigo-600 focus:bg-white dark:focus:bg-slate-900 transition-all shadow-sm" 
                     />
                   </div>
+                  {activeInput === 'to' && suggestions.length > 0 && (
+                    <div className="absolute top-[calc(100%+12px)] left-0 right-0 z-[220] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden max-h-[320px] overflow-y-auto">
+                      {suggestions.map((location) => (
+                        <button
+                          key={`${location.id}-to`}
+                          type="button"
+                          onClick={() => selectSuggestion('to', location.name)}
+                          className="w-full flex items-center gap-4 px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left"
+                        >
+                          <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600">
+                            <MapPin className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <span className="font-black text-slate-900 dark:text-white">{location.name}</span>
+                              {location.code && <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-0.5 rounded-md">{location.code}</span>}
+                            </div>
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{location.country}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-3">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Date</label>
@@ -224,7 +333,22 @@ const Trains: React.FC = () => {
             <h2 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400">Available Express Routes</h2>
             <div className="flex-1 h-[1px] bg-slate-200 dark:border-slate-800"></div>
           </div>
-          {TRAIN_ROUTES.map((train, idx) => (
+          {!formData.to.trim() ? (
+            <div className="bg-white dark:bg-slate-900 p-12 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 text-center">
+              <p className="text-lg font-black text-slate-900 dark:text-white">Enter a destination to unlock IRCTC train options.</p>
+              <p className="mt-3 text-sm font-bold text-slate-500 dark:text-slate-400">We will show matching trains only after a valid route is entered.</p>
+            </div>
+          ) : !hasSearchedRoutes ? (
+            <div className="bg-white dark:bg-slate-900 p-12 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 text-center">
+              <p className="text-lg font-black text-slate-900 dark:text-white">Search your route to see live train options.</p>
+              <p className="mt-3 text-sm font-bold text-slate-500 dark:text-slate-400">Enter your stations and date, then tap `Search Trains`.</p>
+            </div>
+          ) : filteredRoutes.length === 0 ? (
+            <div className="bg-white dark:bg-slate-900 p-12 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 text-center">
+              <p className="text-lg font-black text-slate-900 dark:text-white">No matching trains found.</p>
+              <p className="mt-3 text-sm font-bold text-slate-500 dark:text-slate-400">Try a different source or destination station.</p>
+            </div>
+          ) : filteredRoutes.map((train, idx) => (
             <motion.div 
               key={train.id}
               initial={{ opacity: 0, y: 20 }}
@@ -419,6 +543,7 @@ const Trains: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 };

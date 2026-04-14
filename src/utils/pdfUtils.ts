@@ -23,6 +23,57 @@ const waitForImageLoad = async (image: HTMLImageElement) => {
   }
 };
 
+const fallbackTicketImage =
+  'data:image/svg+xml;charset=utf-8,' +
+  encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="480" height="480" viewBox="0 0 480 480">
+      <defs>
+        <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#1d4ed8"/>
+          <stop offset="100%" stop-color="#0f172a"/>
+        </linearGradient>
+      </defs>
+      <rect width="480" height="480" rx="48" fill="url(#g)"/>
+      <circle cx="240" cy="180" r="72" fill="rgba(255,255,255,0.15)"/>
+      <path d="M155 285h170c19 0 35 16 35 35v6H120v-6c0-19 16-35 35-35Z" fill="rgba(255,255,255,0.2)"/>
+      <text x="240" y="390" text-anchor="middle" fill="#fff" font-family="Arial, sans-serif" font-size="28" font-weight="700">SykBound Ticket</text>
+    </svg>
+  `);
+
+const blobToDataUrl = (blob: Blob) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(String(reader.result || fallbackTicketImage));
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+
+const inlineCloneImages = async (clone: HTMLElement) => {
+  const images = Array.from(clone.querySelectorAll('img'));
+
+  await Promise.all(images.map(async (image) => {
+    const rawSrc = image.getAttribute('src') || '';
+
+    if (!rawSrc) {
+      image.src = fallbackTicketImage;
+      return;
+    }
+
+    if (rawSrc.startsWith('data:') || rawSrc.startsWith('blob:')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(rawSrc, { mode: 'cors' });
+      if (!response.ok) throw new Error(`Image fetch failed for ${rawSrc}`);
+      const blob = await response.blob();
+      image.src = await blobToDataUrl(blob);
+    } catch {
+      image.src = fallbackTicketImage;
+    }
+  }));
+};
+
 const createExportClone = async (element: HTMLElement) => {
   const wrapper = document.createElement('div');
   wrapper.style.position = 'fixed';
@@ -54,6 +105,8 @@ const createExportClone = async (element: HTMLElement) => {
   if ('fonts' in document) {
     await (document as any).fonts.ready;
   }
+
+  await inlineCloneImages(clone);
 
   const clonedImages = Array.from(clone.querySelectorAll('img'));
   await Promise.all(clonedImages.map(waitForImageLoad));

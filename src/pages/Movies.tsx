@@ -10,6 +10,9 @@ const Movies: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('All');
 
+  const handleEliteUpgrade = () => navigate('/privileges');
+  const handleViewBenefits = () => navigate('/privileges', { state: { source: 'movies-premiere-access' } });
+
   const genres = ['All', 'Action', 'Drama', 'Comedy', 'Adventure', 'Fantasy', 'Thriller'];
 
   const filteredMovies = MOVIES.filter(movie => {
@@ -112,10 +115,10 @@ const Movies: React.FC = () => {
                 Get early access to tickets, exclusive screenings, and premium lounge benefits with SykBound Elite.
               </p>
               <div className="flex flex-wrap justify-center md:justify-start gap-4">
-                <button className="px-10 py-5 bg-white text-indigo-600 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:scale-105 transition-all shadow-xl">
+                <button onClick={handleEliteUpgrade} className="px-10 py-5 bg-white text-indigo-600 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:scale-105 transition-all shadow-xl">
                   Upgrade to Elite
                 </button>
-                <button className="px-10 py-5 bg-indigo-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-400 transition-all border border-indigo-400">
+                <button onClick={handleViewBenefits} className="px-10 py-5 bg-indigo-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-400 transition-all border border-indigo-400">
                   View Benefits
                 </button>
               </div>

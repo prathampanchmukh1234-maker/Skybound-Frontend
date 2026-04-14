@@ -2,7 +2,7 @@ import React from 'react';
 import { Booking } from '../types';
 import { useGlobal } from '../context/GlobalContext';
 import { downloadTicket, printTicket } from '../utils/pdfUtils';
-import { buildTicketVerificationDataUri, formatBookingDate, getBookingDisplayTime, getBookingExperienceDisplay, getBookingVenueInfo } from '../utils/ticketUtils';
+import { buildTicketVerificationDataUri, formatBookingDate, getBookingDisplayTime, getBookingExperienceDisplay, getBookingScreenDisplay, getBookingVenueInfo } from '../utils/ticketUtils';
 
 interface ETicketModalProps {
   booking: Booking;
@@ -20,6 +20,7 @@ const ETicketModal: React.FC<ETicketModalProps> = ({ booking, onClose }) => {
   const venueInfo = getBookingVenueInfo(booking);
   const bookingTime = getBookingDisplayTime(booking);
   const bookingExperience = getBookingExperienceDisplay(booking);
+  const screenDisplay = getBookingScreenDisplay(booking);
   const details = (booking.details || {}) as Record<string, any>;
   const routeFrom = booking.from_city || details.from || 'DEL';
   const routeTo = booking.to_city || details.to || details.destination || 'BOM';
@@ -105,6 +106,12 @@ const ETicketModal: React.FC<ETicketModalProps> = ({ booking, onClose }) => {
                 <div className="font-black text-base leading-tight">{[bookingTime, bookingExperience].filter(Boolean).join(' • ')}</div>
               </div>
             )}
+            {screenDisplay && (
+              <div>
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">Screen Number</label>
+                <div className="font-black text-base leading-tight">{screenDisplay}</div>
+              </div>
+            )}
             <div>
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">Status</label>
               <div className={`inline-flex items-center gap-2 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest border ${
@@ -148,6 +155,7 @@ const ETicketModal: React.FC<ETicketModalProps> = ({ booking, onClose }) => {
                 ['Fare', convertPrice(booking.total_price ?? booking.totalPrice)],
                 ['Venue / Route', venueInfo.venueName || `${routeFrom} → ${routeTo}`],
                 ['Location', venueInfo.location || details.location || 'Not provided'],
+                ...(screenDisplay ? [['Screen Number', screenDisplay] as [string, string]] : []),
                 ['Seat(s)', seatDisplay],
                 ['Email', user?.email || 'Not provided'],
                 ['Date', formatBookingDate(booking)]

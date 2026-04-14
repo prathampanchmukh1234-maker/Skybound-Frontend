@@ -6,7 +6,7 @@ import { useGlobal } from '../context/GlobalContext';
 import ETicketModal from '../components/ETicketModal';
 import { Booking, User, TripPlan } from '../types';
 import { supabase } from '../services/supabase';
-import { formatBookingDate, getBookingDisplayTime, getBookingExperienceDisplay, getBookingVenueInfo } from '../utils/ticketUtils';
+import { formatBookingDate, getBookingDisplayTime, getBookingExperienceDisplay, getBookingScreenDisplay, getBookingVenueInfo } from '../utils/ticketUtils';
 import { cancelInsurancePolicy, cancelVisaApplication, getInsurancePoliciesForUser, getVisaApplicationsForUser } from '../services/travelServices';
 
 const Dashboard: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
@@ -195,6 +195,7 @@ const Dashboard: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
                         const venueInfo = getBookingVenueInfo(b);
                         const bookingTime = getBookingDisplayTime(b);
                         const bookingExperience = getBookingExperienceDisplay(b);
+                        const screenDisplay = getBookingScreenDisplay(b);
                         return (
                           <>
                       <div className="absolute -left-[61px] top-0 w-12 h-12 rounded-2xl azure-btn flex items-center justify-center text-xl shadow-lg transition-transform group-hover:scale-110 overflow-hidden">
@@ -247,6 +248,12 @@ const Dashboard: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
                             <span className="block text-[9px] font-black uppercase tracking-[0.18em] text-slate-400 mb-1">{(bookingTime || bookingExperience) ? 'Time / Experience' : 'Booking ID'}</span>
                             <span className="text-slate-900 dark:text-white break-all">{[bookingTime, bookingExperience].filter(Boolean).join(' • ') || b.id}</span>
                           </div>
+                          {screenDisplay && (
+                            <div className="bg-slate-50 dark:bg-slate-900/60 rounded-2xl px-4 py-3">
+                              <span className="block text-[9px] font-black uppercase tracking-[0.18em] text-slate-400 mb-1">Screen Number</span>
+                              <span className="text-slate-900 dark:text-white break-all">{screenDisplay}</span>
+                            </div>
+                          )}
                         </div>
                         <div className="mt-4 flex items-center gap-4 text-[10px] font-bold text-slate-500">
                           <span>ID: {b.id}</span>

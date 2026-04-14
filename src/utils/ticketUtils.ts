@@ -102,6 +102,16 @@ export const getBookingExperienceDisplay = (booking: Booking) => {
   return format || screen || null;
 };
 
+export const getBookingScreenDisplay = (booking: Booking) => {
+  const details = (booking.details || {}) as Record<string, any>;
+  const movieShowtimeId = (booking as any).item_id || booking.itemId || details.showtimeId || details.showtime_id;
+  const matchedShowtime = booking.type === 'movie'
+    ? SHOWTIMES.find((showtime) => showtime.id === movieShowtimeId)
+    : null;
+
+  return booking.screen_number || matchedShowtime?.screen || details.screen || null;
+};
+
 const createEmptyMatrix = () =>
   Array.from({ length: QR_MATRIX_SIZE }, () => Array.from({ length: QR_MATRIX_SIZE }, () => false));
 

@@ -876,7 +876,7 @@ const SearchResults: React.FC = () => {
             <select 
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="bg-transparent border-none outline-none text-slate-900 dark:text-white cursor-pointer font-black"
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 outline-none text-slate-900 dark:text-white cursor-pointer font-black shadow-sm"
             >
               <option value="Recommended">Recommended</option>
               <option value="Price: Low to High">Price: Low to High</option>

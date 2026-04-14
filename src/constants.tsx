@@ -502,12 +502,12 @@ export const HOTELS_DATA: Hotel[] = [
   { id:'h-ccu-1', name:'ITC Sonar', stars:5, image:'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1200', pricePerNight:10000, originalPrice:14000, rating:4.7, reviews:5120, location:'EM Bypass, Kolkata', amenities:['pool','spa','gym','wifi','parking','restaurant','bar'], cancellation:'free', breakfast:true, payAtHotel:true, distance:'Salt Lake' },
 
   // Original hotels (kept for compatibility)
-  {
-    id: 'h-1',
-    name: 'The Taj Mahal Palace',
-    stars: 5,
-    image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1200',
-    pricePerNight: 28000,
+    {
+      id: 'h-1',
+      name: 'The Taj Mahal Palace',
+      stars: 5,
+      image: 'https://images.unsplash.com/photo-1570168007204-dfb528c6958f?q=80&w=1200',
+      pricePerNight: 28000,
     originalPrice: 35000,
     rating: 4.9, reviews: 12450,
     location: 'Colaba, Mumbai',

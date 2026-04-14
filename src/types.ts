@@ -122,6 +122,7 @@ export interface Booking {
   // Poster and title stored directly on booking
   title?: string;
   poster?: string;
+  screen_number?: string;
 }
 
 export interface TripPlan {

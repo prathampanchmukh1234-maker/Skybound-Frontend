@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Car, MapPin, Clock, ShieldCheck, ChevronRight, ChevronLeft, Info, User, Briefcase, Star, X } from 'lucide-react';
 import { CAB_TYPES, LOCATIONS } from '../constants';
+import Toast from '../components/Toast';
 
 const Cabs: React.FC = () => {
   const navigate = useNavigate();
@@ -16,6 +17,8 @@ const Cabs: React.FC = () => {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [activeField, setActiveField] = useState<'from' | 'to' | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -36,14 +39,12 @@ const Cabs: React.FC = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const queryParams = new URLSearchParams({
-      type: 'cab',
-      from: formData.from || 'Pune',
-      to: formData.to || 'Mumbai',
-      departure: formData.date,
-      tab: activeTab
-    }).toString();
-    navigate(`/search?${queryParams}`);
+    if (!formData.to.trim()) {
+      setToast({ message: 'Enter a destination to view available cabs.', type: 'error' });
+      return;
+    }
+    setHasSearched(true);
+    setToast({ message: `Showing ${activeTab} cabs for ${formData.to}.`, type: 'success' });
   };
 
   const handleBook = (cab: any) => {
@@ -73,6 +74,12 @@ const Cabs: React.FC = () => {
     month: 'short',
     year: 'numeric'
   });
+
+  const getDisplayedFare = (cab: any) => {
+    if (activeTab === 'local') return Math.round(cab.perKm * 25);
+    if (activeTab === 'airport') return Math.round(cab.perKm * 40);
+    return cab.baseFare;
+  };
 
   return (
     <div className="pt-32 pb-20 bg-slate-50 dark:bg-slate-950 min-h-screen">
@@ -199,6 +206,17 @@ const Cabs: React.FC = () => {
         </form>
 
         {/* Cab Types */}
+        {!formData.to.trim() ? (
+          <div className="bg-white dark:bg-slate-900 p-12 rounded-3xl border border-slate-100 dark:border-slate-800 text-center">
+            <p className="text-lg font-black text-slate-900 dark:text-white">Enter a destination to unlock cab options.</p>
+            <p className="mt-3 text-sm font-bold text-slate-500 dark:text-slate-400">Cab types will appear only after you set the drop location.</p>
+          </div>
+        ) : !hasSearched ? (
+          <div className="bg-white dark:bg-slate-900 p-12 rounded-3xl border border-slate-100 dark:border-slate-800 text-center">
+            <p className="text-lg font-black text-slate-900 dark:text-white">Search your route to see available cab categories.</p>
+            <p className="mt-3 text-sm font-bold text-slate-500 dark:text-slate-400">Set your pickup and drop, then tap `Search Cabs`.</p>
+          </div>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {CAB_TYPES.map((cab, idx) => (
             <motion.div 
@@ -249,8 +267,8 @@ const Cabs: React.FC = () => {
                 <p className="text-xs font-bold text-slate-500 leading-relaxed">{cab.example}</p>
                 <div className="pt-8 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between">
                   <div>
-                    <span className="text-3xl font-black text-indigo-600 tracking-tighter font-display">₹{cab.perKm}</span>
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">/ km</span>
+                    <span className="text-3xl font-black text-indigo-600 tracking-tighter font-display">₹{getDisplayedFare(cab)}</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{activeTab === 'outstation' ? 'starting fare' : 'estimated fare'}</span>
                   </div>
                   <button 
                     onClick={() => handleBook(cab)}
@@ -263,6 +281,7 @@ const Cabs: React.FC = () => {
             </motion.div>
           ))}
         </div>
+        )}
 
         {/* Features Row */}
         <div className="mt-24 grid grid-cols-1 md:grid-cols-3 gap-12">
@@ -281,6 +300,7 @@ const Cabs: React.FC = () => {
           ))}
         </div>
       </div>
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 };

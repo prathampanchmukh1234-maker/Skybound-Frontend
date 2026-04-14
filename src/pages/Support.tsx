@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Headset, Mail, Bot, Plus, Minus, Send, MessageSquare, Phone, LifeBuoy, ChevronLeft } from 'lucide-react';
@@ -12,11 +11,43 @@ const Support: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useGlobal();
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
-  const [formState, setFormState] = useState({ name: '', email: '', message: '' });
+  const [formState, setFormState] = useState({
+    name: '',
+    email: '',
+    category: 'general',
+    subject: '',
+    message: ''
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [ticketRef, setTicketRef] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<{message:string, type:'success'|'error'|'info'}|null>(null);
   const showToast = (message: string, type: 'success'|'error'|'info' = 'info') => setToastMsg({message, type});
+
+  const openAiAssistant = () => {
+    window.dispatchEvent(new Event('open-sykbound-chat'));
+    showToast('AI Assistant opened.', 'success');
+  };
+
+  const openLiveSupport = () => {
+    window.dispatchEvent(new Event('open-sykbound-chat'));
+    setFormState((prev) => ({ ...prev, category: 'technical', subject: prev.subject || 'Live support request' }));
+    showToast('Live support connected through chat.', 'success');
+  };
+
+  const openEmailSupport = () => {
+    const subject = encodeURIComponent('SykBound Support Request');
+    const body = encodeURIComponent('Hi SykBound team,\n\nI need help with:\n');
+    window.location.href = `mailto:support@sykbound.com?subject=${subject}&body=${body}`;
+  };
+
+  useEffect(() => {
+    setFormState((prev) => ({
+      ...prev,
+      name: prev.name || user?.name || '',
+      email: prev.email || user?.email || ''
+    }));
+  }, [user]);
 
   const faqs = [
     { q: "How do I claim a refund for my cancelled flight?", a: "Once you cancel a booking from your dashboard, a refund is automatically calculated based on the airline policy. Credits are added to your SkyWallet within seconds." },
@@ -30,24 +61,65 @@ const Support: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      const { error } = await supabase.from('support_tickets').insert([{
+      const payload = {
         user_id: user?.id || null,
-        name: formState.name,
-        email: formState.email,
-        message: formState.message,
-        status: 'open'
-      }]);
+        name: formState.name.trim(),
+        email: formState.email.trim(),
+        category: formState.category,
+        subject: formState.subject.trim(),
+        message: formState.message.trim(),
+        status: 'open',
+        priority: user?.tier === 'Elite' || user?.tier === 'Diamond' ? 'high' : 'normal',
+        source: 'support_hub',
+        page_context: window.location.pathname,
+        metadata: {
+          tier: user?.tier || 'guest',
+          submitted_at: new Date().toISOString()
+        }
+      };
 
-      if (error) throw error;
+      let createdTicketId: string | null = null;
 
-      setIsSubmitting(false);
+      const enrichedAttempt = await supabase
+        .from('support_tickets')
+        .insert([payload])
+        .select('id')
+        .single();
+
+      if (enrichedAttempt.error) {
+        const legacyAttempt = await supabase
+          .from('support_tickets')
+          .insert([{
+            user_id: payload.user_id,
+            name: payload.name,
+            email: payload.email,
+            message: `${payload.subject}\n\nCategory: ${payload.category}\n\n${payload.message}`,
+            status: payload.status
+          }])
+          .select('id')
+          .single();
+
+        if (legacyAttempt.error) throw legacyAttempt.error;
+        createdTicketId = legacyAttempt.data?.id || null;
+      } else {
+        createdTicketId = enrichedAttempt.data?.id || null;
+      }
+
       setSubmitted(true);
-      setFormState({ name: '', email: '', message: '' });
+      setTicketRef(createdTicketId);
+      setFormState({
+        name: user?.name || '',
+        email: user?.email || '',
+        category: 'general',
+        subject: '',
+        message: ''
+      });
       setTimeout(() => setSubmitted(false), 5000);
     } catch (error) {
       console.error("Failed to submit support ticket:", error);
-      setIsSubmitting(false);
       showToast("Failed to send message. Please try again later.", "error");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -75,16 +147,17 @@ const Support: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-32">
            {[
-             { icon: Headset, title: 'Live Support', desc: 'Available 24/7', color: 'blue' },
-             { icon: Mail, title: 'Email Support', desc: 'Responds in 2h', color: 'indigo' },
-             { icon: Bot, title: 'AI Assistant', desc: 'Instant Answers', color: 'purple' }
+             { icon: Headset, title: 'Live Support', desc: 'Available 24/7', onClick: openLiveSupport },
+             { icon: Mail, title: 'Email Support', desc: 'Responds in 2h', onClick: openEmailSupport },
+             { icon: Bot, title: 'AI Assistant', desc: 'Instant Answers', onClick: openAiAssistant }
            ].map((item, i) => (
              <motion.div 
                key={i}
                whileHover={{ y: -10 }}
-               className={`p-12 bg-white dark:bg-slate-900 rounded-[3.5rem] text-center border border-slate-100 dark:border-slate-800 shadow-xl hover:shadow-2xl transition-all cursor-pointer group`}
+               onClick={item.onClick}
+               className="p-12 bg-white dark:bg-slate-900 rounded-[3.5rem] text-center border border-slate-100 dark:border-slate-800 shadow-xl hover:shadow-2xl transition-all cursor-pointer group"
              >
-                <div className={`w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-[2rem] flex items-center justify-center mx-auto mb-8 group-hover:bg-indigo-600 group-hover:text-white transition-all`}>
+                <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-[2rem] flex items-center justify-center mx-auto mb-8 group-hover:bg-indigo-600 group-hover:text-white transition-all">
                   <item.icon className="w-8 h-8" />
                 </div>
                 <h3 className="font-black uppercase text-xs tracking-widest mb-2 text-slate-900 dark:text-white">{item.title}</h3>
@@ -126,11 +199,11 @@ const Support: React.FC = () => {
               <h3 className="text-2xl font-black mb-4 relative z-10">Still need help?</h3>
               <p className="text-slate-400 font-medium mb-8 relative z-10">Our global support team is ready to assist you with any travel-related queries.</p>
               <div className="flex flex-wrap gap-4 relative z-10">
-                <button className="flex items-center gap-3 px-6 py-3 bg-white text-slate-900 rounded-xl font-black text-[10px] uppercase tracking-widest">
+                <button onClick={openEmailSupport} className="flex items-center gap-3 px-6 py-3 bg-white text-slate-900 rounded-xl font-black text-[10px] uppercase tracking-widest">
                   <Phone className="w-4 h-4" />
                   Call Us
                 </button>
-                <button className="flex items-center gap-3 px-6 py-3 bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest">
+                <button onClick={openLiveSupport} className="flex items-center gap-3 px-6 py-3 bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest">
                   <MessageSquare className="w-4 h-4" />
                   Live Chat
                 </button>
@@ -166,6 +239,33 @@ const Support: React.FC = () => {
                 />
               </div>
               <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Category</label>
+                <select
+                  required
+                  value={formState.category}
+                  onChange={e => setFormState({...formState, category: e.target.value})}
+                  className="w-full px-8 py-5 bg-slate-50 dark:bg-slate-800 rounded-[2rem] font-bold outline-none border border-transparent focus:border-indigo-600 transition-all text-slate-900 dark:text-white"
+                >
+                  <option value="general">General</option>
+                  <option value="booking">Booking Help</option>
+                  <option value="payments">Payments</option>
+                  <option value="movies">Movies & Tickets</option>
+                  <option value="elite">Elite Membership</option>
+                  <option value="technical">Technical Issue</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Subject</label>
+                <input 
+                  type="text" 
+                  required
+                  value={formState.subject}
+                  onChange={e => setFormState({...formState, subject: e.target.value})}
+                  className="w-full px-8 py-5 bg-slate-50 dark:bg-slate-800 rounded-[2rem] font-bold outline-none border border-transparent focus:border-indigo-600 transition-all text-slate-900 dark:text-white" 
+                  placeholder="Tell us what you need help with"
+                />
+              </div>
+              <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Message</label>
                 <textarea 
                   required
@@ -197,6 +297,7 @@ const Support: React.FC = () => {
                   className="p-6 bg-green-50 dark:bg-green-900/20 rounded-2xl border border-green-100 dark:border-green-800 text-center"
                 >
                   <p className="text-sm font-bold text-green-600">Message sent successfully! We'll be in touch soon.</p>
+                  {ticketRef && <p className="mt-2 text-[10px] font-black uppercase tracking-widest text-green-700">Reference: {ticketRef}</p>}
                 </motion.div>
               )}
             </form>

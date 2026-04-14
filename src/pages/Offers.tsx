@@ -4,11 +4,20 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Tags, Percent, Zap, Clock, ChevronRight, ChevronLeft, Search, Filter, Sparkles, Gift, Heart, Star } from 'lucide-react';
 import { useGlobal } from '../context/GlobalContext';
+import Toast from '../components/Toast';
 
 const Offers: React.FC = () => {
   const navigate = useNavigate();
-  const { convertPrice } = useGlobal();
+  const { user, addNotification } = useGlobal();
   const [activeTab, setActiveTab] = useState('all');
+  const [claimedOffers, setClaimedOffers] = useState<number[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('sb_claimed_offers') || '[]');
+    } catch {
+      return [];
+    }
+  });
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   const offers = [
     { id: 1, title: 'Summer Escape', desc: 'Get up to 40% OFF on luxury beach resorts in Bali and Maldives.', code: 'SUMMER40', category: 'hotels', img: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?q=80&w=1200' },
@@ -20,6 +29,41 @@ const Offers: React.FC = () => {
   ];
 
   const filteredOffers = activeTab === 'all' ? offers : offers.filter(o => o.category === activeTab);
+
+  const offerRoutes: Record<string, string> = {
+    flights: '/flights',
+    hotels: '/hotels',
+    movies: '/movies',
+    concerts: '/concerts',
+    cabs: '/cabs',
+    visa: '/visa'
+  };
+
+  const handleClaimOffer = (offer: typeof offers[number]) => {
+    const alreadyClaimed = claimedOffers.includes(offer.id);
+    const nextClaimed = alreadyClaimed ? claimedOffers : [...claimedOffers, offer.id];
+
+    if (!alreadyClaimed) {
+      setClaimedOffers(nextClaimed);
+      localStorage.setItem('sb_claimed_offers', JSON.stringify(nextClaimed));
+      addNotification(`Offer unlocked: ${offer.title}`, `Use code ${offer.code} on your next ${offer.category} booking.`);
+      setToast({ message: `${offer.code} unlocked. Redirecting to ${offer.category}.`, type: 'success' });
+    } else {
+      setToast({ message: `${offer.code} already claimed. Opening ${offer.category}.`, type: 'info' });
+    }
+
+    setTimeout(() => {
+      navigate(offerRoutes[offer.category] || '/offers', {
+        state: {
+          appliedOffer: {
+            code: offer.code,
+            title: offer.title,
+            category: offer.category
+          }
+        }
+      });
+    }, 500);
+  };
 
   return (
     <div className="pt-32 pb-20 bg-slate-50 dark:bg-slate-950 min-h-screen">
@@ -97,8 +141,8 @@ const Offers: React.FC = () => {
                   <div className="bg-slate-100 dark:bg-slate-800 px-6 py-3 rounded-xl border-2 border-dashed border-indigo-600/30">
                     <span className="text-xs font-black text-indigo-600 font-mono tracking-widest">{offer.code}</span>
                   </div>
-                  <button className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2 group-hover:text-indigo-600 transition-colors">
-                    Claim Offer <ChevronRight className="w-4 h-4" />
+                  <button onClick={() => handleClaimOffer(offer)} className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2 group-hover:text-indigo-600 transition-colors">
+                    {claimedOffers.includes(offer.id) ? 'Open Offer' : 'Claim Offer'} <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -140,6 +184,7 @@ const Offers: React.FC = () => {
           </div>
         </div>
       </div>
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 };

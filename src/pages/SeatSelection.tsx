@@ -201,6 +201,8 @@ const SeatSelection: React.FC = () => {
       userId: user.id,
       type: 'movie',
       itemId: showtimeId,
+      movieId: movie.id,
+      showtimeId: showtime.id,
       title: movie.title,
       poster: movie.poster,
       seat: selectedSeats,
@@ -208,7 +210,21 @@ const SeatSelection: React.FC = () => {
       paymentId: null,
       venue: theater.name,
       travel_date: showtime.date,
-      show_time: showtime.time
+      show_time: showtime.time,
+      screen_number: showtime.screen,
+      details: {
+        movieTitle: movie.title,
+        theaterName: theater.name,
+        theaterLocation: theater.location,
+        format: showtime.format,
+        screen: showtime.screen,
+        screenType: showtime.screenType,
+        showtimeId: showtime.id,
+        showtime_id: showtime.id,
+        movieId: movie.id,
+        movie_id: movie.id,
+        poster: movie.poster
+      }
     };
 
     // Demo Mode or isFreeDemo: If no key is present or user is demo, skip payment
@@ -369,6 +385,20 @@ const SeatSelection: React.FC = () => {
         venue: theater.name,
         travel_date: showtime.date,
         show_time: showtime.time,
+        screen_number: showtime.screen,
+        details: {
+          movieTitle: movie.title,
+          theaterName: theater.name,
+          theaterLocation: theater.location,
+          format: showtime.format,
+          screen: showtime.screen,
+          screenType: showtime.screenType,
+          showtimeId: showtime.id,
+          showtime_id: showtime.id,
+          movieId: movie.id,
+          movie_id: movie.id,
+          poster: movie.poster
+        },
         created_at: new Date().toISOString()
       }]);
 
@@ -441,6 +471,20 @@ const SeatSelection: React.FC = () => {
         venue: theater.name,
         travel_date: showtime.date,
         show_time: showtime.time,
+        screen_number: showtime.screen,
+        details: {
+          movieTitle: movie.title,
+          theaterName: theater.name,
+          theaterLocation: theater.location,
+          format: showtime.format,
+          screen: showtime.screen,
+          screenType: showtime.screenType,
+          showtimeId: showtime.id,
+          showtime_id: showtime.id,
+          movieId: movie.id,
+          movie_id: movie.id,
+          poster: movie.poster
+        },
         created_at: new Date().toISOString()
       };
 
@@ -473,6 +517,8 @@ const SeatSelection: React.FC = () => {
         userId: user?.id,
         type: 'movie',
         itemId: showtimeId,
+        movieId: movie.id,
+        showtimeId: showtime.id,
         title: movie.title,
         poster: movie.poster,
         seat: selectedSeats,
@@ -480,7 +526,21 @@ const SeatSelection: React.FC = () => {
         paymentId: 'demo',
         venue: theater.name,
         travel_date: showtime.date,
-        show_time: showtime.time
+        show_time: showtime.time,
+        screen_number: showtime.screen,
+        details: {
+          movieTitle: movie.title,
+          theaterName: theater.name,
+          theaterLocation: theater.location,
+          format: showtime.format,
+          screen: showtime.screen,
+          screenType: showtime.screenType,
+          showtimeId: showtime.id,
+          showtime_id: showtime.id,
+          movieId: movie.id,
+          movie_id: movie.id,
+          poster: movie.poster
+        }
       });
       setBookingSuccess(true);
       setTimeout(() => navigate('/dashboard'), 3000);
