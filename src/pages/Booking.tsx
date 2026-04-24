@@ -28,7 +28,7 @@ const Booking: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
   const [usePoints, setUsePoints] = useState(false);
   const [useWallet, setUseWallet] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
+  const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [couponInput, setCouponInput] = useState('');
   const [couponError, setCouponError] = useState('');
@@ -39,9 +39,25 @@ const Booking: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
   
   const { item, type } = state || {};
   const bookingDestination = item?.to || item?.destination || item?.to_city || 'your destination';
+  const travelerCount = Math.max(1, Number(item?.travelers) || 1);
+  const includedSeatSelection = Array.isArray(item?.seats) ? item.seats : [];
+  const requiredSeatCount = type === 'bus' && includedSeatSelection.length > 0 ? includedSeatSelection.length : travelerCount;
+  const perTravelerBasePrice = item?.baseFare || item?.price || 0;
+  const convenienceFeePerTraveler = calcConvenienceFee(item.distance_km || 0, type);
+  const pricingMultiplier = type === 'bus' && includedSeatSelection.length > 0 ? 1 : travelerCount;
 
-  const handleSingleSeatSelect = (seat: string) => {
-    setSelectedSeat((currentSeat) => (currentSeat === seat ? null : seat));
+  const handleSeatSelect = (seat: string) => {
+    setSelectedSeats((currentSeats) => {
+      if (currentSeats.includes(seat)) {
+        return currentSeats.filter((currentSeat) => currentSeat !== seat);
+      }
+
+      if (currentSeats.length >= requiredSeatCount) {
+        return currentSeats;
+      }
+
+      return [...currentSeats, seat];
+    });
   };
 
   const isFreeDemo = useMemo(() => user?.email?.includes('demo') || user?.email?.includes('test'), [user]);
@@ -88,6 +104,7 @@ const Booking: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
   useEffect(() => {
     // FIX 1: Skip seat selection if already done in Buses.tsx
     if (type === 'bus' && item?.seats && step === 1) {
+      setSelectedSeats(item.seats);
       setStep(2);
     }
 
@@ -108,8 +125,8 @@ const Booking: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
 
   if (!item) return <div className="pt-40 text-center font-black text-slate-400">Path Error: No item selected.</div>;
 
-  const convenienceFee = calcConvenienceFee(item.distance_km || 0, type);
-  const basePrice = item.price + convenienceFee;
+  const convenienceFee = convenienceFeePerTraveler * pricingMultiplier;
+  const basePrice = (perTravelerBasePrice * pricingMultiplier) + convenienceFee;
   
   // Calculate discount
   let discount = 0;
@@ -173,7 +190,7 @@ const Booking: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
       itemId: item.id,
       title: item.title || item.operator || item.name || item.airline || 'SykBound Service',
       poster: item.poster || item.image || item.logo || item.operatorLogo || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=600',
-      seat: selectedSeat ? [selectedSeat] : [],
+      seat: includedSeatSelection.length > 0 ? includedSeatSelection : selectedSeats,
       totalPrice: finalPrice,
       walletDeduction: walletValue,
       paymentId: null,
@@ -181,7 +198,8 @@ const Booking: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
       travel_date: item.travel_date,
       show_time: item.show_time,
       from_city: item.from_city,
-      to_city: item.to_city
+      to_city: item.to_city,
+      travelers: travelerCount
     };
 
     // Demo Mode or isFreeDemo: If no key is present or user is demo, skip payment
@@ -336,7 +354,7 @@ const Booking: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
         movie_id: type === 'movie' ? item.id : null,
         title: item.title || item.operator || item.name || item.airline || 'SykBound Service',
         poster: item.poster || item.image || item.logo || item.operatorLogo || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=600',
-        seat: selectedSeat ? [selectedSeat] : [],
+        seat: includedSeatSelection.length > 0 ? includedSeatSelection : selectedSeats,
         total_price: 0,
         payment_id: type === 'movie' ? 'FREE_DAILY' : type === 'flight' ? 'FREE_DAILY_FLIGHT' : 'FREE_DEMO',
         status: 'confirmed',
@@ -346,6 +364,7 @@ const Booking: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
         show_time: item.show_time,
         from_city: item.from_city,
         to_city: item.to_city,
+        travelers: travelerCount,
         created_at: new Date().toISOString()
       }]);
 
@@ -431,11 +450,21 @@ const Booking: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
                 {isTransport ? (
                   user ? (
                     <>
-                      <SeatSelector type={type} item={item} onSelect={handleSingleSeatSelect} selectedSeat={selectedSeat} />
+                      <SeatSelector
+                        type={type}
+                        item={item}
+                        onSelect={handleSeatSelect}
+                        selectedSeat={selectedSeats[0] || null}
+                        selectedSeats={selectedSeats}
+                        maxSelectableSeats={requiredSeatCount}
+                      />
+                      <div className="mt-6 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">
+                        {selectedSeats.length} / {requiredSeatCount} selected
+                      </div>
                       <div className="mt-12 flex justify-end">
                         <button 
                           onClick={() => setStep(2)} 
-                          disabled={!selectedSeat} 
+                          disabled={selectedSeats.length !== requiredSeatCount} 
                           className="azure-btn px-16 py-5 rounded-3xl font-black uppercase tracking-widest shadow-xl disabled:opacity-50"
                         >
                           Confirm Selection
@@ -445,11 +474,18 @@ const Booking: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
                   ) : (
                     <div className="space-y-8">
                       <div className="opacity-40 pointer-events-none grayscale">
-                        <SeatSelector type={type} item={item} onSelect={() => {}} selectedSeat={null} />
+                        <SeatSelector
+                          type={type}
+                          item={item}
+                          onSelect={() => {}}
+                          selectedSeat={null}
+                          selectedSeats={[]}
+                          maxSelectableSeats={requiredSeatCount}
+                        />
                       </div>
                       <LoginCTA message="Seat selection is only available for SkyBound members. Sign in to choose your favorite spot!" />
                       <div className="flex justify-center mt-8">
-                        <button onClick={() => setStep(2)} className="text-slate-400 font-black text-[10px] uppercase tracking-[0.2em] hover:text-blue-600 transition-colors">Continue as Guest (Auto-assigned Seat)</button>
+                        <button onClick={() => setStep(2)} className="text-slate-400 font-black text-[10px] uppercase tracking-[0.2em] hover:text-blue-600 transition-colors">Continue as Guest (Auto-assigned Seats)</button>
                       </div>
                     </div>
                   )
@@ -471,14 +507,32 @@ const Booking: React.FC<{onShowToast: any}> = ({ onShowToast }) => {
                       <h3 className="text-2xl font-black text-slate-900 dark:text-white">{item.airline || item.title}</h3>
                       <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mt-1">Order Summary</p>
                     </div>
-                    <div className="text-2xl font-black text-blue-600">{convertPrice(item.price)}</div>
+                    <div className="text-2xl font-black text-blue-600">{convertPrice(basePrice)}</div>
                   </div>
                   
                   <div className="space-y-4">
+                    {pricingMultiplier > 1 && (
+                      <div className="flex justify-between items-center text-sm font-bold text-slate-500">
+                        <span>Base Fare x {pricingMultiplier}</span>
+                        <span>{convertPrice(perTravelerBasePrice * pricingMultiplier)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between items-center text-sm font-bold text-slate-500">
-                      <span>Convenience Fee</span>
+                      <span>Convenience Fee{pricingMultiplier > 1 ? ` x ${pricingMultiplier}` : ''}</span>
                       <span>{convertPrice(convenienceFee)}</span>
                     </div>
+                    {isTransport && (
+                      <div className="flex justify-between items-center text-sm font-bold text-slate-500">
+                        <span>{type === 'train' ? 'Berths' : 'Seats'} Selected</span>
+                        <span>
+                          {includedSeatSelection.length > 0
+                            ? includedSeatSelection.join(', ')
+                            : selectedSeats.length > 0
+                              ? selectedSeats.join(', ')
+                              : `${requiredSeatCount} auto-assigned`}
+                        </span>
+                      </div>
+                    )}
                     {appliedCoupon && discount > 0 && (
                       <div className="flex justify-between items-center text-sm font-black text-green-600">
                         <span className="flex items-center gap-2">

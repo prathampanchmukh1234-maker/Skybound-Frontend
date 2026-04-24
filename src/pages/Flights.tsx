@@ -13,6 +13,35 @@ interface MultiCitySegment {
 }
 
 const todayISO = new Date().toISOString().split('T')[0];
+const defaultOrigin = 'Pune';
+
+const normalizeLocationValue = (value: string) => value.trim().toLowerCase();
+
+const getLocationMatch = (value: string) => {
+  const normalizedValue = normalizeLocationValue(value);
+  if (!normalizedValue) return null;
+
+  return LOCATIONS.find((location) => {
+    const normalizedName = normalizeLocationValue(location.name);
+    const normalizedCode = normalizeLocationValue(location.code || '');
+    return normalizedName === normalizedValue || normalizedCode === normalizedValue;
+  });
+};
+
+const areSameLocations = (from: string, to: string) => {
+  const normalizedFrom = normalizeLocationValue(from);
+  const normalizedTo = normalizeLocationValue(to);
+
+  if (!normalizedFrom || !normalizedTo) return false;
+  if (normalizedFrom === normalizedTo) return true;
+
+  const fromMatch = getLocationMatch(from);
+  const toMatch = getLocationMatch(to);
+
+  if (!fromMatch || !toMatch) return false;
+
+  return normalizeLocationValue(fromMatch.name) === normalizeLocationValue(toMatch.name);
+};
 
 const Flights: React.FC = () => {
   const navigate = useNavigate();
@@ -36,11 +65,11 @@ const Flights: React.FC = () => {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [activeInput, setActiveInput] = useState<string | null>(null);
   const [validationError, setValidationError] = useState('');
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setActiveInput(null);
         setSuggestions([]);
       }
@@ -50,14 +79,20 @@ const Flights: React.FC = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  useEffect(() => {
+    if (!formData.from.trim()) {
+      setFormData((prev) => ({ ...prev, from: defaultOrigin }));
+    }
+  }, [formData.from]);
+
   const getLocations = (val: string) =>
     LOCATIONS.filter((location) =>
       location.name.toLowerCase().includes(val.toLowerCase()) ||
       (location.code && location.code.toLowerCase().includes(val.toLowerCase()))
     ).slice(0, 8);
 
-  const openSuggestions = (value: string, inputKey: string) => {
-    setSuggestions(getLocations(value));
+  const openSuggestions = (value: string, inputKey: string, showAll = false) => {
+    setSuggestions(getLocations(showAll ? '' : value));
     setActiveInput(inputKey);
   };
 
@@ -136,7 +171,10 @@ const Flights: React.FC = () => {
           <button
             key={location.code}
             type="button"
-            onClick={() => selectLocation(inputKey, location.name)}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              selectLocation(inputKey, location.name);
+            }}
             className="w-full flex items-center gap-4 px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left"
           >
             <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600">
@@ -178,14 +216,14 @@ const Flights: React.FC = () => {
           return;
         }
 
-        if (segment.from.toLowerCase() === segment.to.toLowerCase()) {
+        if (areSameLocations(segment.from, segment.to)) {
           setValidationError(`From and To cannot be the same for leg ${i + 1}.`);
           return;
         }
 
         if (i > 0) {
           const previous = normalizedSegments[i - 1];
-          if (previous.to.toLowerCase() !== segment.from.toLowerCase()) {
+          if (!areSameLocations(previous.to, segment.from)) {
             setValidationError(`Leg ${i + 1} must start from ${previous.to}.`);
             return;
           }
@@ -214,7 +252,7 @@ const Flights: React.FC = () => {
       return;
     }
 
-    const from = formData.from.trim();
+    const from = formData.from.trim() || defaultOrigin;
     const to = (formData.to || 'Mumbai').trim();
 
     if (!from || !to || !formData.departureDate) {
@@ -222,7 +260,7 @@ const Flights: React.FC = () => {
       return;
     }
 
-    if (from.toLowerCase() === to.toLowerCase()) {
+    if (areSameLocations(from, to)) {
       setValidationError('From and To cities cannot be the same.');
       return;
     }
@@ -296,10 +334,10 @@ const Flights: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-10 rounded-[2.5rem] shadow-xl border border-slate-100 dark:border-slate-800 mb-20 relative overflow-visible z-20">
+        <div ref={containerRef} className="bg-white dark:bg-slate-900 p-10 rounded-[2.5rem] shadow-xl border border-slate-100 dark:border-slate-800 mb-20 relative overflow-visible z-20">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-indigo-600"></div>
 
-          <div className="mb-8 flex flex-wrap gap-3" ref={dropdownRef}>
+          <div className="mb-8 flex flex-wrap gap-3">
             {tripTypeButtons.map((item) => (
               <button
                 key={item.value}
@@ -336,7 +374,7 @@ const Flights: React.FC = () => {
                         setFormData((prev) => ({ ...prev, from: e.target.value }));
                         openSuggestions(e.target.value, 'single-from');
                       }}
-                      onFocus={() => openSuggestions(formData.from, 'single-from')}
+                      onFocus={() => openSuggestions(formData.from, 'single-from', true)}
                       className="w-full pl-14 pr-6 py-5 bg-slate-50 dark:bg-slate-800 rounded-2xl font-bold outline-none border border-transparent focus:border-indigo-600 focus:bg-white dark:focus:bg-slate-900 transition-all shadow-sm"
                     />
                   </div>
@@ -355,7 +393,7 @@ const Flights: React.FC = () => {
                         setFormData((prev) => ({ ...prev, to: e.target.value }));
                         openSuggestions(e.target.value, 'single-to');
                       }}
-                      onFocus={() => openSuggestions(formData.to, 'single-to')}
+                      onFocus={() => openSuggestions(formData.to, 'single-to', true)}
                       className="w-full pl-14 pr-6 py-5 bg-slate-50 dark:bg-slate-800 rounded-2xl font-bold outline-none border border-transparent focus:border-indigo-600 focus:bg-white dark:focus:bg-slate-900 transition-all shadow-sm"
                     />
                   </div>
@@ -430,7 +468,7 @@ const Flights: React.FC = () => {
                             updateMultiCitySegment(index, 'from', e.target.value);
                             openSuggestions(e.target.value, `multi-${index}-from`);
                           }}
-                          onFocus={() => openSuggestions(segment.from, `multi-${index}-from`)}
+                          onFocus={() => openSuggestions(segment.from, `multi-${index}-from`, true)}
                           className="w-full pl-11 pr-4 py-4 bg-slate-50 dark:bg-slate-800 rounded-2xl font-bold outline-none border border-transparent focus:border-indigo-600 focus:bg-white dark:focus:bg-slate-900 transition-all shadow-sm"
                         />
                       </div>
@@ -449,7 +487,7 @@ const Flights: React.FC = () => {
                             updateMultiCitySegment(index, 'to', e.target.value);
                             openSuggestions(e.target.value, `multi-${index}-to`);
                           }}
-                          onFocus={() => openSuggestions(segment.to, `multi-${index}-to`)}
+                          onFocus={() => openSuggestions(segment.to, `multi-${index}-to`, true)}
                           className="w-full pl-11 pr-4 py-4 bg-slate-50 dark:bg-slate-800 rounded-2xl font-bold outline-none border border-transparent focus:border-indigo-600 focus:bg-white dark:focus:bg-slate-900 transition-all shadow-sm"
                         />
                       </div>

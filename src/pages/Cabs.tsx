@@ -33,14 +33,28 @@ const Cabs: React.FC = () => {
 
   const getLocations = (val: string) =>
     LOCATIONS.filter(l =>
+      l.region === 'domestic' && (
       l.name.toLowerCase().includes(val.toLowerCase()) ||
       (l.code && l.code.toLowerCase().includes(val.toLowerCase()))
+      )
     ).slice(0, 8);
+
+  const isIndianCity = (value: string) =>
+    LOCATIONS.some((location) =>
+      location.region === 'domestic' && (
+        location.name.toLowerCase() === value.trim().toLowerCase() ||
+        location.code?.toLowerCase() === value.trim().toLowerCase()
+      )
+    );
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.to.trim()) {
       setToast({ message: 'Enter a destination to view available cabs.', type: 'error' });
+      return;
+    }
+    if (!isIndianCity(formData.to) || (formData.from.trim() && !isIndianCity(formData.from))) {
+      setToast({ message: 'Cabs are available only for Indian cities.', type: 'error' });
       return;
     }
     setHasSearched(true);

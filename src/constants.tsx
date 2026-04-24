@@ -628,6 +628,102 @@ export const ACTIVITIES: Activity[] = [
     instantConfirmation: true, freeCancellation: true,
     includes: ['7 Food Stops', 'Expert Guide', 'Drinks'],
     location: 'Kasba Peth, Pune'
+  },
+  {
+    id: 'act-4',
+    title: 'Mumbai Street Food & Heritage Walk',
+    category: 'Food Tours',
+    image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1200',
+    price: 1800, originalPrice: 2400,
+    duration: '3 hours',
+    rating: 4.8, reviews: 932,
+    instantConfirmation: true, freeCancellation: true,
+    includes: ['Local Tastings', 'Guide', 'Fort Area Walk'],
+    location: 'Fort, Mumbai'
+  },
+  {
+    id: 'act-5',
+    title: 'Sunset Cruise Experience',
+    category: 'Nature',
+    image: 'https://images.unsplash.com/photo-1500375592092-40eb2168fd21?q=80&w=1200',
+    price: 2200, originalPrice: 3000,
+    duration: '2 hours',
+    rating: 4.7, reviews: 684,
+    instantConfirmation: true, freeCancellation: true,
+    includes: ['Cruise Access', 'Welcome Drink', 'Live Music'],
+    location: 'Gateway of India, Mumbai'
+  },
+  {
+    id: 'act-6',
+    title: 'Old Delhi Food Trail',
+    category: 'Food Tours',
+    image: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?q=80&w=1200',
+    price: 1600, originalPrice: 2100,
+    duration: '3 hours',
+    rating: 4.9, reviews: 1284,
+    instantConfirmation: true, freeCancellation: true,
+    includes: ['Food Tastings', 'Rickshaw Ride', 'Local Expert'],
+    location: 'Chandni Chowk, New Delhi'
+  },
+  {
+    id: 'act-7',
+    title: 'Goa Watersports Combo',
+    category: 'Adventure',
+    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200',
+    price: 3500, originalPrice: 4800,
+    duration: '4 hours',
+    rating: 4.8, reviews: 2140,
+    instantConfirmation: true, freeCancellation: false,
+    includes: ['Parasailing', 'Jet Ski', 'Banana Ride', 'Safety Gear'],
+    location: 'Calangute, Goa'
+  },
+  {
+    id: 'act-8',
+    title: 'Bangalore Craft Brewery Trail',
+    category: 'Food Tours',
+    image: 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=1200',
+    price: 2400, originalPrice: 3200,
+    duration: '3 hours',
+    rating: 4.7, reviews: 512,
+    instantConfirmation: true, freeCancellation: true,
+    includes: ['Brewery Hops', 'Tasting Flights', 'Host'],
+    location: 'Indiranagar, Bangalore'
+  },
+  {
+    id: 'act-9',
+    title: 'Hyderabad Heritage & Biryani Tour',
+    category: 'Culture',
+    image: 'https://images.unsplash.com/photo-1524499982521-1ffd58dd89ea?q=80&w=1200',
+    price: 1900, originalPrice: 2500,
+    duration: '4 hours',
+    rating: 4.8, reviews: 741,
+    instantConfirmation: true, freeCancellation: true,
+    includes: ['Charminar Walk', 'Biryani Tasting', 'Guide'],
+    location: 'Charminar, Hyderabad'
+  },
+  {
+    id: 'act-10',
+    title: 'Chennai Marina Cultural Walk',
+    category: 'Culture',
+    image: 'https://images.unsplash.com/photo-1473116763249-2faaef81ccda?q=80&w=1200',
+    price: 1400, originalPrice: 1900,
+    duration: '2.5 hours',
+    rating: 4.6, reviews: 403,
+    instantConfirmation: true, freeCancellation: true,
+    includes: ['Local Guide', 'Snacks', 'Historic Stories'],
+    location: 'Marina Beach, Chennai'
+  },
+  {
+    id: 'act-11',
+    title: 'Kolkata Tram & Market Experience',
+    category: 'Culture',
+    image: 'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?q=80&w=1200',
+    price: 1350, originalPrice: 1800,
+    duration: '3 hours',
+    rating: 4.7, reviews: 366,
+    instantConfirmation: true, freeCancellation: true,
+    includes: ['Tram Ride', 'Market Stop', 'Guide'],
+    location: 'College Street, Kolkata'
   }
 ];
 

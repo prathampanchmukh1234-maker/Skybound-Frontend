@@ -6,13 +6,14 @@ interface SeatSelectorProps {
   onSelect: (seat: string) => void;
   selectedSeat: string | null;
   selectedSeats?: string[]; // For multi-select like movies
+  maxSelectableSeats?: number;
   bookedSeats?: string[]; // For real-time availability
   showtime?: any; // For movies
   item?: any; // For bus/train/etc.
   convertPrice?: (price: number) => string;
 }
 
-const SeatSelector: React.FC<SeatSelectorProps> = ({ type, onSelect, selectedSeat, selectedSeats = [], bookedSeats = [], showtime, item, convertPrice }) => {
+const SeatSelector: React.FC<SeatSelectorProps> = ({ type, onSelect, selectedSeat, selectedSeats = [], maxSelectableSeats = 1, bookedSeats = [], showtime, item, convertPrice }) => {
   const [activeCoach, setActiveCoach] = useState('H1');
 
   const data = item || showtime;
@@ -360,6 +361,9 @@ const SeatSelector: React.FC<SeatSelectorProps> = ({ type, onSelect, selectedSea
         </h3>
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
           SkyBound Premium {type} Experience
+        </p>
+        <p className="text-[10px] font-bold text-indigo-600 mt-3">
+          Select up to {maxSelectableSeats} {type === 'train' ? 'berth' : 'seat'}{maxSelectableSeats > 1 ? 's' : ''}
         </p>
       </div>
 

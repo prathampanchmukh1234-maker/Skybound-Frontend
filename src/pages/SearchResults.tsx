@@ -664,7 +664,7 @@ const SearchResults: React.FC = () => {
         }));
       } else if (type === 'activity') {
         const cityActivities = ACTIVITIES.filter(a => a.location.toLowerCase().includes(toCity.toLowerCase()));
-        const sourceData = cityActivities.length > 0 ? cityActivities : ACTIVITIES;
+        const sourceData = cityActivities;
 
         mockData = sourceData.map((act, i) => ({
           id: act.id,
@@ -792,6 +792,8 @@ const SearchResults: React.FC = () => {
       enrichedItem.to_city = item.to;
       enrichedItem.travel_date = searchParams.get('departure') || '';
       enrichedItem.show_time = item.departureTime;
+      enrichedItem.travelers = Number(searchParams.get('travelers') || '1');
+      enrichedItem.travelClass = searchParams.get('class') || 'Economy';
     }
 
     if (type === 'hotel') {
@@ -806,6 +808,7 @@ const SearchResults: React.FC = () => {
       enrichedItem.to_city = item.to;
       enrichedItem.travel_date = searchParams.get('departure') || '';
       enrichedItem.show_time = item.departureTime;
+      enrichedItem.travelers = Number(searchParams.get('travelers') || '1');
     }
 
     if (type === 'train') {
@@ -814,6 +817,7 @@ const SearchResults: React.FC = () => {
       enrichedItem.to_city = item.to;
       enrichedItem.travel_date = searchParams.get('departure') || '';
       enrichedItem.show_time = item.departureTime;
+      enrichedItem.travelers = Number(searchParams.get('travelers') || '1');
     }
 
     if (type === 'cab') {

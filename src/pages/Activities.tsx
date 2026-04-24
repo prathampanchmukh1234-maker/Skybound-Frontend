@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Search, MapPin, Calendar, Star, ShieldCheck, ChevronRight, Info, Clock, Ticket, Zap, Filter, X, ChevronLeft } from 'lucide-react';
-import { ACTIVITIES } from '../constants';
+import { ACTIVITIES, LOCATIONS } from '../constants';
 
 import ReviewSystem from '../components/ReviewSystem';
 import { AnimatePresence } from 'framer-motion';
@@ -13,6 +13,7 @@ const Activities: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [priceRange, setPriceRange] = useState<number>(10000);
   const [selectedActivity, setSelectedActivity] = useState<any>(null);
+  const [searchError, setSearchError] = useState('');
 
   const filteredActivities = useMemo(() => {
     return ACTIVITIES.filter(a => {
@@ -26,6 +27,20 @@ const Activities: React.FC = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    const isIndianCity = !normalizedQuery || LOCATIONS.some((location) =>
+      location.region === 'domestic' && (
+        location.name.toLowerCase() === normalizedQuery ||
+        location.code?.toLowerCase() === normalizedQuery
+      )
+    );
+
+    if (!isIndianCity) {
+      setSearchError('Please enter an Indian city only.');
+      return;
+    }
+
+    setSearchError('');
     const queryParams = new URLSearchParams({
       type: 'activity',
       to: searchQuery || 'Pune'
@@ -112,7 +127,10 @@ const Activities: React.FC = () => {
                 type="text" 
                 placeholder="Search activities in Pune, Mumbai..." 
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  if (searchError) setSearchError('');
+                }}
                 className="w-full pl-16 pr-6 py-6 bg-slate-50 dark:bg-slate-800 rounded-3xl font-bold outline-none border border-transparent focus:border-indigo-600 focus:bg-white dark:focus:bg-slate-900 transition-all shadow-sm text-lg" 
               />
             </div>
@@ -121,6 +139,9 @@ const Activities: React.FC = () => {
               Search
             </button>
           </form>
+          {searchError && (
+            <p className="mt-4 text-[11px] font-black uppercase tracking-widest text-red-500">{searchError}</p>
+          )}
         </div>
 
         {/* Activities Grid */}

@@ -10,6 +10,16 @@
   --color-indigo-700: #4338ca;
 }
 
+:root {
+  --navbar-safe-offset: 112px;
+}
+
+@media (max-width: 640px) {
+  :root {
+    --navbar-safe-offset: 96px;
+  }
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
